@@ -1,29 +1,21 @@
 # 1 atributo --- dataset entero 
 '''
+Enunciado:
+Algoritmos de discretización para un solo atributo y para un dataset completo (ambas opciones): Igual frecuencia e igual anchura
+
+
 discretización = transformar una variable continua/numérica en categorías o intervalos
 
-Posibles expansiones en el futuro: 
-- Anchura, frecuencia con margen?
-- Agrupacion basada en clustering (k-means...)
-- ChiMerge
-
-Por ahora: Igual anchura, igual frecuencia
 
 '''
 from auxiliar.verbose import _verbose
+from auxiliar.auxiliar_es import _es_dataset, _es_variable, _es_continua
 import pandas as pd
 
 def discretizar(datos, metodo="anchura", n_intervalos=None,
                 frecuencia=None, columnas=None, verbose=1):
-    """API PÚBLICA: discretizar una variable o un dataset.
+    """API PÚBLICA: discretizar una variable o un dataset."""
 
-    1. Validar parámetros
-    2. Determinar si `datos` es una variable o un dataset
-    3. Determinar qué columnas se deben discretizar
-    4. Elegir método
-    5. Llamar a la función interna correspondiente
-    6. Devolver resultado
-    """
     _verbose('Iniciando discretizacion...', verbose)
     _verbose(f'''Parametros elegidos: 
     metodo: {metodo}, 
@@ -57,19 +49,6 @@ def discretizar(datos, metodo="anchura", n_intervalos=None,
         raise TypeError("datos debe ser una Series numérica o un DataFrame.")
 
 
-def _es_variable(datos):
-    """Devuelve True si `datos` es una variable numérica (pd.Series)."""
-    return (
-        isinstance(datos, pd.Series)
-        and pd.api.types.is_numeric_dtype(datos)
-    )
-
-
-def _es_dataset(datos):
-    """Devuelve True si `datos` es un dataset (DataFrame)."""
-    return isinstance(datos, pd.DataFrame)
-
-
 def _discretizar_dataset(dataset, metodo,
                          n_intervalos, frecuencia,
                          columnas, verbose=1):
@@ -89,7 +68,7 @@ def _discretizar_dataset(dataset, metodo,
                     f"La columna '{col}' no existe en el dataset."
                 )
 
-            if not pd.api.types.is_numeric_dtype(df[col]):
+            if not _es_continua(df[col]):
                 raise TypeError(
                     f"La columna '{col}' no es numérica."
                 )
