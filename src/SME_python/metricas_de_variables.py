@@ -16,8 +16,6 @@ def calcular_metricas(dataset, clases=None, atributos=None, verbose=1):
     '''
     #Sirve como router continuo/discreto
 
-    #TODO: RAISE ERRORS
-    #TODO. VERBOSES
 
 
     _verbose( "Iniciando cálculo de métricas...", verbose ) 
@@ -92,8 +90,13 @@ def _calcular_metricas_continua(columna, clases, verbose=1): #Iual demasiado def
     _verbose( f"Varianza calculada: {round(varianza, 4)}", 
              verbose, nivel=2 ) 
     
-    if clases is None: 
-        raise ValueError( "Se necesitan las clases para calcular el AUC." ) 
+    if clases is None:
+        _verbose(
+            "No se han proporcionado clases. No se calculará el AUC.",
+            verbose,
+            nivel=2
+        )
+        return {"varianza": varianza} 
     auc = _calcular_AUC(columna, clases, verbose)
 
     _verbose( f"AUC calculado: {round(auc, 4)}", verbose, nivel=2 ) 
