@@ -1,0 +1,20 @@
+# Dependencias para ejecutar la librería SME_python.
+
+# Estructura de datos y cálculo numérico
+numpy
+pandas
+scipy
+scikit-learn
+
+# Visualización
+matplotlib
+seaborn
+plotly
+plotnine
+
+# Entorno de desarrollo / notebooks
+jupyter
+ipykernel
+
+# Para tests
+pytest

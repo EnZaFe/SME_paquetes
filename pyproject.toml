@@ -1,0 +1,53 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "sme-python"
+version = "0.1.0"
+description = "Librería para la gestión y análisis de datasets (discretización, métricas, normalización, filtrado, correlación e información mutua)."
+readme = "README.md"
+requires-python = ">=3.9"
+license = { text = "MIT" }
+authors = [{ name = "SME Python", email = "" }]
+keywords = ["data-mining", "discretization", "metrics", "normalization", "correlation"]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Topic :: Scientific/Engineering",
+]
+dependencies = [
+    "numpy",
+    "pandas",
+    "scipy",
+    "matplotlib",
+    "seaborn",
+    "plotly",
+    "plotnine",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest",
+    "jupyter",
+    "ipykernel",
+    "scikit-learn",
+]
+
+[project.urls]
+Homepage = "https://github.com/your-username/SME_Python"
+
+# Layout del proyecto: el paquete vive en src/SME_python.
+[tool.setuptools.packages.find]
+where = ["src"]
+
+# Módulos que componen el paquete (explícitos para evitar confusiones).
+[tool.setuptools.package-data]
+"SME_python" = ["py.typed"]
+"auxiliar" = ["__init__.py"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py", "*_test.py"]
+addopts = "-ra"
