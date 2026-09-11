@@ -1,19 +1,42 @@
 def _verbose(mensaje, verbose, nivel=1, tipo="info"):
-    '''
-    Funcion auxiliar creada para ayudar tanto en el desarrollo como en el uso del paquete
+    """
+    Muestra mensajes informativos durante la ejecución.
 
-    verbose=0 -> Nada
-    verbose=1 -> Informacion basica
-    verbose=2 -> Informacion detallada
-    '''
+    Niveles:
+        verbose=0 -> No muestra mensajes.
+        verbose=1 -> Información básica sobre los pasos principales.
+        verbose=2 -> Información detallada y resultados intermedios.
+        verbose=3 -> Información de diagnóstico / depuración.
 
-    if verbose >= nivel:
+    Tipos:
+        info
+        warning
+        error
+        success
+        debug
+    """
 
-        if tipo == "info":
-            if nivel == 1:
-                print(f"\033[94m{mensaje}\033[0m")  # azul
-            elif nivel == 2:
-                print(f"\033[90m{mensaje}\033[0m")  # gris
+    if verbose < nivel:
+        return
 
-        elif tipo == "warning":
-            print(f"\033[93mWARNING: {mensaje}\033[0m")  # amarillo
+    colores = {
+        "info": "\033[94m",      # azul
+        "warning": "\033[93m",   # amarillo
+        "error": "\033[91m",     # rojo
+        "success": "\033[92m",   # verde
+        "debug": "\033[90m",     # gris
+    }
+
+    color = colores.get(tipo, "\033[94m")
+
+    prefijos = {
+        "info": "",
+        "warning": "WARNING: ",
+        "error": "ERROR: ",
+        "success": "",
+        "debug": "DEBUG: ",
+    }
+
+    prefijo = prefijos.get(tipo, "")
+
+    print(f"{color}{prefijo}{mensaje}\033[0m")
