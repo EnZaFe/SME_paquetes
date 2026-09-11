@@ -4,9 +4,9 @@ def _verbose(mensaje, verbose, nivel=1, tipo="info"):
 
     Niveles:
         verbose=0 -> No muestra mensajes.
-        verbose=1 -> Información básica sobre los pasos principales.
-        verbose=2 -> Información detallada y resultados intermedios.
-        verbose=3 -> Información de diagnóstico / depuración.
+        verbose=1 -> Información principal.
+        verbose=2 -> Información detallada.
+        verbose=3 -> Información de diagnóstico.
 
     Tipos:
         info
@@ -19,24 +19,26 @@ def _verbose(mensaje, verbose, nivel=1, tipo="info"):
     if verbose < nivel:
         return
 
-    colores = {
-        "info": "\033[94m",      # azul
-        "warning": "\033[93m",   # amarillo
-        "error": "\033[91m",     # rojo
-        "success": "\033[92m",   # verde
-        "debug": "\033[90m",     # gris
-    }
+    if tipo == "warning":
+        print(f"\033[93mWARNING: {mensaje}\033[0m")
 
-    color = colores.get(tipo, "\033[94m")
+    elif tipo == "error":
+        print(f"\033[91mERROR: {mensaje}\033[0m")
 
-    prefijos = {
-        "info": "",
-        "warning": "WARNING: ",
-        "error": "ERROR: ",
-        "success": "",
-        "debug": "DEBUG: ",
-    }
+    elif tipo == "success":
+        print(f"\033[92m{mensaje}\033[0m")
 
-    prefijo = prefijos.get(tipo, "")
+    elif nivel == 1:
+        # Azul fuerte
+        print(f"\033[94m{mensaje}\033[0m")
 
-    print(f"{color}{prefijo}{mensaje}\033[0m")
+    elif nivel == 2:
+        # Gris
+        print(f"\033[90m{mensaje}\033[0m")
+
+    elif nivel == 3:
+        # Gris oscuro
+        print(f"\033[38;5;240m{mensaje}\033[0m")
+
+    else:
+        print(mensaje)

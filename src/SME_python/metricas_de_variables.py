@@ -54,7 +54,7 @@ def calcular_metricas(dataset, clases=None, atributos=None, verbose=1):
             _verbose(
                 f"Se ha recibido una variable: '{dataset.name}'.",
                 verbose,
-                nivel=1
+                nivel=2
             )
 
             metricas = _calcular_metricas_variable(
@@ -79,7 +79,7 @@ def calcular_metricas(dataset, clases=None, atributos=None, verbose=1):
             f"Se ha recibido un dataset con "
             f"{dataset.shape[0]} filas y {dataset.shape[1]} columnas.",
             verbose,
-            nivel=1
+            nivel=2
         )
 
         metricas = _calcular_metricas_dataset(
@@ -123,7 +123,7 @@ def _calcular_metricas_dataset(dataset, clases, atributos_clm, verbose=1):
             f"Se han seleccionado {len(atributos_clm)} atributos "
             "para calcular sus métricas.",
             verbose,
-            nivel=1
+            nivel=2
         )
 
         for col in atributos_clm:
@@ -140,12 +140,6 @@ def _calcular_metricas_dataset(dataset, clases, atributos_clm, verbose=1):
                 raise ValueError(
                     f"La columna '{col}' no existe en el dataset."
                 )
-
-            _verbose(
-                f"Analizando atributo '{col}'...",
-                verbose,
-                nivel=1
-            )
 
             metricas[col] = _calcular_metricas_variable(
                 dataset[col],
@@ -166,12 +160,6 @@ def _calcular_metricas_dataset(dataset, clases, atributos_clm, verbose=1):
 
     for col in dataset.columns:
 
-        _verbose(
-            f"Analizando atributo '{col}'...",
-            verbose,
-            nivel=1
-        )
-
         metricas[col] = _calcular_metricas_variable(
             dataset[col],
             clases,
@@ -190,7 +178,7 @@ def _calcular_metricas_variable(columna, clases, verbose=1):
             f"Se ha detectado que '{columna.name}' es discreta. "
             "Calculando entropía...",
             verbose,
-            nivel=1
+            nivel=2
         )
 
         return _calcular_metricas_discreta(
@@ -204,7 +192,7 @@ def _calcular_metricas_variable(columna, clases, verbose=1):
             f"Se ha detectado que '{columna.name}' es continua. "
             "Calculando varianza y AUC...",
             verbose,
-            nivel=1
+            nivel=2
         )
 
         return _calcular_metricas_continua(
@@ -232,12 +220,6 @@ def _calcular_metricas_variable(columna, clases, verbose=1):
 def _calcular_metricas_discreta(columna, verbose=1):
     """Calcula las métricas de una variable discreta."""
 
-    _verbose(
-        f"Calculando entropía de '{columna.name}'...",
-        verbose,
-        nivel=2
-    )
-
     entropia = _calcular_entropia(
         columna,
         verbose
@@ -251,11 +233,6 @@ def _calcular_metricas_discreta(columna, verbose=1):
 def _calcular_metricas_continua(columna, clases, verbose=1):
     """Calcula las métricas de una variable continua."""
 
-    _verbose(
-        f"Calculando varianza de '{columna.name}'...",
-        verbose,
-        nivel=2
-    )
 
     varianza = _calcular_varianza(
         columna,
@@ -265,7 +242,7 @@ def _calcular_metricas_continua(columna, clases, verbose=1):
     _verbose(
         f"Varianza calculada: {round(varianza, 4)}",
         verbose,
-        nivel=2
+        nivel=3
     )
 
     if clases is None:
@@ -282,11 +259,6 @@ def _calcular_metricas_continua(columna, clases, verbose=1):
             "varianza": varianza
         }
 
-    _verbose(
-        f"Calculando AUC de '{columna.name}'...",
-        verbose,
-        nivel=2
-    )
 
     auc = _calcular_AUC(
         columna,
@@ -297,7 +269,7 @@ def _calcular_metricas_continua(columna, clases, verbose=1):
     _verbose(
         f"AUC calculado: {round(auc, 4)}",
         verbose,
-        nivel=2
+        nivel=3
     )
 
     return {
@@ -343,13 +315,6 @@ def _calcular_entropia(atributo_clm, verbose):
     entre 0 y 1 es negativo, y queremos obtener una entropía positiva.
     '''
 
-    _verbose(
-        f"Preparando datos para calcular la entropía "
-        f"de '{atributo_clm.name}'...",
-        verbose,
-        nivel=2
-    )
-
     if pd.isna(atributo_clm).any():
 
         num_nulos = pd.isna(atributo_clm).sum()
@@ -387,7 +352,7 @@ def _calcular_entropia(atributo_clm, verbose):
     Número de casos: {len(atributo_clm)}
     Valores únicos: {valores_unicos}""",
         verbose,
-        nivel=2
+        nivel=3
     )
 
     entropia = 0
@@ -415,7 +380,7 @@ def _calcular_entropia(atributo_clm, verbose):
     _verbose(
         f"Entropía final: {entropia:.4f}",
         verbose,
-        nivel=2
+        nivel=3
     )
 
     return entropia
@@ -430,13 +395,6 @@ def _calcular_varianza(atributo_clm, verbose):
     Formula:
         Var(X) = (1/n) * sumatorio((xi - media)^2)
     '''
-
-    _verbose(
-        f"Preparando datos para calcular la varianza "
-        f"de '{atributo_clm.name}'...",
-        verbose,
-        nivel=2
-    )
 
     if pd.isna(atributo_clm).any():
 
@@ -476,7 +434,7 @@ def _calcular_varianza(atributo_clm, verbose):
     _verbose(
         f"Media: {media:.4f}",
         verbose,
-        nivel=2
+        nivel=3
     )
 
     suma_diferencias = 0
@@ -492,7 +450,7 @@ def _calcular_varianza(atributo_clm, verbose):
     _verbose(
         f"Varianza: {varianza:.4f}",
         verbose,
-        nivel=2
+        nivel=3
     )
 
     return varianza
@@ -503,11 +461,6 @@ def _calcular_AUC(atributo_clm, clases, verbose):
     AUC (Area Under the ROC Curve)...
     '''
 
-    _verbose(
-        "Iniciando cálculo de AUC...",
-        verbose,
-        nivel=2
-    )
 
     if len(atributo_clm) != len(clases):
 
@@ -589,13 +542,13 @@ def _calcular_AUC(atributo_clm, clases, verbose):
     _verbose(
         f"Elementos de la clase '{clase_1}': {len(valores_clase_1)}",
         verbose,
-        nivel=2
+        nivel=3
     )
 
     _verbose(
         f"Elementos de la clase '{clase_2}': {len(valores_clase_2)}",
         verbose,
-        nivel=2
+        nivel=3
     )
 
     comparaciones_correctas = 0
@@ -637,19 +590,19 @@ def _calcular_AUC(atributo_clm, clases, verbose):
     _verbose(
         f"Comparaciones correctas: {comparaciones_correctas}",
         verbose,
-        nivel=2
+        nivel=3
     )
 
     _verbose(
         f"Empates: {empates}",
         verbose,
-        nivel=2
+        nivel=3
     )
 
     _verbose(
         f"AUC: {auc:.4f}",
         verbose,
-        nivel=2
+        nivel=3
     )
 
     return auc
