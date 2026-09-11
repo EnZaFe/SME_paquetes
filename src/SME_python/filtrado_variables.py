@@ -10,14 +10,13 @@ Parámetros:
 - `varianza`: `(min, max)` para filtrar variables continuas.
 - `auc`: `(min, max)` para filtrar variables continuas.
 - `clases`: variable clase binaria necesaria para calcular el AUC.
+- 'modo': 
+    "dentro" (5,7) → [5,7]
+    "fuera"  (5,7) → (-∞,5) ∪ (7,∞)
 - `atributos`: lista opcional de variables a evaluar.
 - `verbose`: nivel de información mostrado.
 
-`None` indica que no hay límite:
-- `(0.5, None)` → >= 0.5
-- `(None, 1.5)` → <= 1.5
-- `(0.5, 1.5)` → entre 0.5 y 1.5
-- `None` → no se aplica ese filtro.
+
 
 Se pueden combinar varias métricas. Si se especifican varias, deben cumplirse
 todas las condiciones correspondientes a cada variable.
@@ -34,6 +33,7 @@ def filtrar_variables(
     entropia=None,
     varianza=None,
     auc=None,
+    modo="dentro",
     clases=None,
     atributos=None,
     verbose=1
@@ -79,29 +79,41 @@ def filtrar_variables(
 
         if _es_discreta(dataset[columna]):
 
-            if _cumple_filtro(valores.get("entropia"), entropia):
+            if _cumple_filtro(valores.get("entropia"), entropia, modo):
                 columnas_validas.append(columna)
 
         elif _es_continua(dataset[columna]):
 
-            if (_cumple_filtro(valores.get("varianza"), varianza)
-                    and _cumple_filtro(valores.get("auc"), auc)):
+            if (_cumple_filtro(valores.get("varianza"), varianza, modo)
+                    and _cumple_filtro(valores.get("auc"), auc, modo)):
                 columnas_validas.append(columna)
 
     return dataset[columnas_validas].copy()
 
     
-def _cumple_filtro(valor, intervalo):
-        """Comprueba si un valor cumple un intervalo (min, max)."""
+def _cumple_filtro(valor, intervalo, modo):
+    """Comprueba si un valor cumple un intervalo.
+    
+    Ejemplos:
+    _cumple_filtro(5, (None, 7), "dentro")  # True
+    _cumple_filtro(8, (None, 7), "dentro")  # False
 
-        if intervalo is None:
-            return True
+    _cumple_filtro(5, (None, 7), "fuera")   # False
+    _cumple_filtro(8, (None, 7), "fuera")   # True
+    
+    
+    
+    """
 
-        minimo, maximo = intervalo
+    if intervalo is None:
+        return True
 
-        if valor is None:
-            return True
+    if valor is None:
+        return True
 
+    minimo, maximo = intervalo
+
+    if modo == "dentro":
         if minimo is not None and valor < minimo:
             return False
 
@@ -109,3 +121,20 @@ def _cumple_filtro(valor, intervalo):
             return False
 
         return True
+
+    elif modo == "fuera":
+        if minimo is not None and maximo is not None:
+            return valor < minimo or valor > maximo
+
+        if minimo is not None:
+            return valor < minimo
+
+        if maximo is not None:
+            return valor > maximo
+
+        return True
+
+    else:
+        raise ValueError(
+            "modo debe ser 'dentro' o 'fuera'."
+        )

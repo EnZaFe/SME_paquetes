@@ -10,10 +10,10 @@ readme = "README.md"
 requires-python = ">=3.9"
 license = { text = "MIT" }
 authors = [{ name = "SME Python", email = "" }]
-keywords = ["data-mining", "discretization", "metrics", "normalization", "correlation"]
+keywords = ["discretization", "metrics", "normalization", "correlation"]
 classifiers = [
     "Programming Language :: Python :: 3",
-    "License :: OSI Approved :: MIT License",
+    "License :: None",
     "Operating System :: OS Independent",
     "Topic :: Scientific/Engineering",
 ]

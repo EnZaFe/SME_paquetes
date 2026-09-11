@@ -2,30 +2,52 @@
 
 Librería para la gestión y análisis de datasets.
 
-Módulos públicos (una funcionalidad por módulo):
-
-    - discretizacion:            discretización por igual frecuencia / igual anchura.
-    - metricas_de_variables:     varianza, entropía y AUC por variable.
-    - normalizacion_estandarizacion: normalización (min-max) y estandarización (z-score).
-    - filtrado_variables:        selección de variables según una métrica y umbral.
-    - correlacion_info:          correlación e información mutua entre variables.
-    - visualizacion:             heatmaps, plots de AUC, etc.
-
-Ejemplo de uso::
-
-    import SME_python as sme
-
-    from sme import discretizacion
+Módulos públicos:
+    - discretizacion
+    - metricas_de_variables
+    - normalizacion_estandarizacion
+    - filtrado_variables
+    - correlacion_info
+    - visualizacion
 """
 
 __version__ = "0.1.0"
 
+
+# Discretización
+from .discretizacion import discretizar
+
+# Métricas
+from .metricas_de_variables import calcular_metricas
+
+# Normalización y estandarización
+from .normalizacion_estandarizacion import normalizar, estandarizar
+
+# Filtrado de variables
+from .filtrado_variables import filtrar_variables
+
+# Correlación
+from .correlacion_info import calcular_correlacion
+
+# Visualización
+from .visualizacion import (
+    graficar_auc,
+    graficar_pearson,
+    graficar_informacion_mutua,
+    graficar_welch,
+)
+
+
 __all__ = [
     "__version__",
-    "discretizacion",
-    "metricas_de_variables",
-    "normalizacion_estandarizacion",
-    "filtrado_variables",
-    "correlacion_info",
-    "visualizacion",
+    "discretizar",
+    "calcular_metricas",
+    "normalizar",
+    "estandarizar",
+    "filtrar_variables",
+    "calcular_correlacion",
+    "graficar_auc",
+    "graficar_pearson",
+    "graficar_informacion_mutua",
+    "graficar_welch",
 ]
