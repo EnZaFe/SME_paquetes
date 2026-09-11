@@ -7,122 +7,234 @@ import numpy as np
 from auxiliar.auxiliar_es import _es_dataset, _es_variable, _es_discreta, _es_continua
 from SME_python.metricas_de_variables import _calcular_AUC
 from SME_python.correlacion_info import _calc_corr_num, _calc_corr_catg, _calc_corr_catg_num
+from auxiliar.verbose import _verbose
 
 sns.set_theme(style="whitegrid", context="talk")
 PALETA = "viridis"
 
-
-def graficar_auc(y_real, y_probabilidad, resultado=None):
+def graficar_auc(atributo_clm, clases, resultado=None, verbose=1):
     """
-    Curva ROC + distribución de probabilidades por clase.
+    Curva ROC + distribución del atributo numérico por clase.
 
     Se puede llamar de dos formas:
 
-        graficar_auc(y_real, y_probabilidad)
-            -> calcula todo internamente
+        graficar_auc(atributo_clm, clases)
+            -> calcula el AUC automáticamente
 
-        graficar_auc(y_real, y_probabilidad, resultado=info)
-            -> reutiliza el AUC ya calculado (p.ej. desde
-               calcular_metricas), evitando recalcularlo
+        graficar_auc(atributo_clm, clases, resultado=info)
+            -> reutiliza un AUC ya calculado
     """
 
-    if len(y_real) != len(y_probabilidad):
+    if len(atributo_clm) != len(clases):
         raise ValueError(
-            "y_real e y_probabilidad deben tener el mismo número de elementos."
+            "El atributo y las clases deben tener el mismo número "
+            "de elementos."
         )
 
-    if len(y_real) == 0:
+    if len(atributo_clm) == 0:
         raise ValueError(
-            "No se puede calcular la curva ROC con datos vacíos."
+            "No se puede calcular el AUC con datos vacíos."
         )
 
-    if not _es_continua(y_probabilidad):
+    if not _es_continua(atributo_clm):
         raise TypeError(
-            "y_probabilidad debe ser una variable numérica."
+            "El atributo debe ser numérico para calcular el AUC."
         )
 
-    clases = set(y_real)
+    valores_clases = set(clases)
 
-    if len(clases) != 2:
+    if len(valores_clases) != 2:
         raise ValueError(
-            "y_real debe contener exactamente dos clases."
+            "Las clases deben contener exactamente dos clases."
         )
 
-    y_real = pd.Series(y_real).reset_index(drop=True)
-    y_probabilidad = pd.Series(y_probabilidad).reset_index(drop=True)
+    atributo_clm = pd.Series(atributo_clm).reset_index(drop=True)
+    clases = pd.Series(clases).reset_index(drop=True)
 
-    # Si no nos pasan el AUC ya calculado, lo calculamos con la misma
-    # función que usan las métricas, para que el número sea siempre
-    # coherente en toda la librería.
+    # --------------------------------
+    # Calcular o reutilizar el AUC
+    # --------------------------------
+
     if resultado is not None and "valor" in resultado:
+
         auc = resultado["valor"]
+
     else:
-        auc = _calcular_AUC(y_probabilidad, y_real, verbose=0)
+
+        _verbose(
+            "No se ha proporcionado el resultado de AUC. "
+            "Se calculará automáticamente.",
+            verbose,
+            nivel=2
+        )
+
+        auc = _calcular_AUC(
+            atributo_clm,
+            clases,
+            verbose=0
+        )
+
+    # --------------------------------
+    # Preparar los datos
+    # --------------------------------
 
     datos = pd.DataFrame({
-        "clase": y_real,
-        "probabilidad": y_probabilidad
-    }).sort_values("probabilidad", ascending=False)
+        "clase": clases,
+        "atributo": atributo_clm
+    })
 
-    clase_1, clase_2 = list(clases)
+    datos = datos.sort_values(
+        "atributo",
+        ascending=False
+    )
 
-    positivos = int((datos["clase"] == clase_1).sum())
-    negativos = int((datos["clase"] == clase_2).sum())
+    clase_1 = list(valores_clases)[0]
+    clase_2 = list(valores_clases)[1]
+
+    positivos = int(
+        (datos["clase"] == clase_1).sum()
+    )
+
+    negativos = int(
+        (datos["clase"] == clase_2).sum()
+    )
 
     if positivos == 0 or negativos == 0:
         raise ValueError(
             "Cada clase debe tener al menos una observación."
         )
 
-    tpr, fpr = [0], [0]
-    vp, fp = 0, 0
+    # --------------------------------
+    # Construir curva ROC
+    # --------------------------------
+
+    tpr = [0]
+    fpr = [0]
+
+    vp = 0
+    fp = 0
 
     for clase in datos["clase"]:
+
         if clase == clase_1:
             vp += 1
+
         else:
             fp += 1
+
         tpr.append(vp / positivos)
         fpr.append(fp / negativos)
 
     tpr.append(1)
     fpr.append(1)
 
-    fig, ejes = plt.subplots(1, 2, figsize=(14, 6))
+    # --------------------------------
+    # Crear figura
+    # --------------------------------
 
-    # --- Curva ROC ---
+    fig, ejes = plt.subplots(
+        1,
+        2,
+        figsize=(14, 6)
+    )
+
+    # --------------------------------
+    # Curva ROC
+    # --------------------------------
+
     ax = ejes[0]
-    ax.plot(fpr, tpr, color="#2c7fb8", lw=3, label=f"ROC (AUC = {auc:.3f})")
-    ax.fill_between(fpr, tpr, alpha=0.2, color="#2c7fb8")
-    ax.plot([0, 1], [0, 1], linestyle="--", color="gray", lw=1.5,
-            label="Clasificador aleatorio")
+
+    ax.plot(
+        fpr,
+        tpr,
+        color="#2c7fb8",
+        lw=3,
+        label=f"ROC (AUC = {auc:.3f})"
+    )
+
+    ax.fill_between(
+        fpr,
+        tpr,
+        alpha=0.2,
+        color="#2c7fb8"
+    )
+
+    ax.plot(
+        [0, 1],
+        [0, 1],
+        linestyle="--",
+        color="gray",
+        lw=1.5,
+        label="Clasificador aleatorio"
+    )
+
     ax.set_xlabel("False Positive Rate")
     ax.set_ylabel("True Positive Rate")
-    ax.set_title(f"Curva ROC · AUC = {auc:.3f}", fontweight="bold")
-    ax.legend(loc="lower right", frameon=True)
+
+    ax.set_title(
+        f"Curva ROC · AUC = {auc:.3f}",
+        fontweight="bold"
+    )
+
+    ax.legend(
+        loc="lower right",
+        frameon=True
+    )
+
     ax.set_xlim(0, 1)
     ax.set_ylim(0, 1)
 
-    # --- Distribución de la probabilidad por clase ---
-    ax2 = ejes[1]
-    sns.kdeplot(
-        data=datos, x="probabilidad", hue="clase",
-        fill=True, common_norm=False, alpha=0.4, palette=PALETA, ax=ax2
-    )
-    sns.rugplot(
-        data=datos, x="probabilidad", hue="clase",
-        palette=PALETA, ax=ax2, legend=False
-    )
-    ax2.set_title("Distribución de probabilidades por clase", fontweight="bold")
-    ax2.set_xlabel("Probabilidad estimada")
+    # --------------------------------
+    # Distribución del atributo
+    # --------------------------------
 
-    fig.suptitle("Análisis del clasificador", fontsize=18, fontweight="bold")
+    ax2 = ejes[1]
+
+    sns.kdeplot(
+        data=datos,
+        x="atributo",
+        hue="clase",
+        fill=True,
+        common_norm=False,
+        alpha=0.4,
+        palette=PALETA,
+        ax=ax2
+    )
+
+    sns.rugplot(
+        data=datos,
+        x="atributo",
+        hue="clase",
+        palette=PALETA,
+        ax=ax2,
+        legend=False
+    )
+
+    ax2.set_title(
+        "Distribución del atributo por clase",
+        fontweight="bold"
+    )
+
+    ax2.set_xlabel(
+        atributo_clm.name
+        if atributo_clm.name is not None
+        else "Atributo"
+    )
+
+    ax2.set_ylabel("Densidad")
+
+    fig.suptitle(
+        "Análisis del AUC",
+        fontsize=18,
+        fontweight="bold"
+    )
+
     fig.tight_layout()
 
     return fig
 
 
-def graficar_pearson(atributo1, atributo2, resultado=None):
+def graficar_pearson(atributo1, atributo2, resultado=None, verbose=1):
     """
     Dispersión + regresión lineal + distribuciones marginales entre
     dos variables numéricas, junto con el coeficiente de Pearson.
@@ -147,6 +259,13 @@ def graficar_pearson(atributo1, atributo2, resultado=None):
         raise TypeError("El segundo atributo debe ser numérico.")
 
     if resultado is None:
+        _verbose(
+            "No se ha proporcionado el resultado de Pearson. "
+            "Se calculará automáticamente.",
+            1,
+            nivel=2
+        )
+
         resultado = _calc_corr_num(atributo1, atributo2, verbose=0)
 
     x = resultado["x"]
@@ -179,10 +298,11 @@ def graficar_pearson(atributo1, atributo2, resultado=None):
     )
     grafico.figure.subplots_adjust(top=0.92)
 
+    plt.close(grafico.figure)
     return grafico.figure
 
 
-def graficar_informacion_mutua(atributo1, atributo2, resultado=None):
+def graficar_informacion_mutua(atributo1, atributo2, resultado=None, verbose=1):
     """
     Heatmap de la tabla de contingencia entre dos variables
     categóricas, con frecuencias absolutas y relativas, y la
@@ -201,6 +321,12 @@ def graficar_informacion_mutua(atributo1, atributo2, resultado=None):
         raise TypeError("El segundo atributo debe ser categórico/discreto.")
 
     if resultado is None:
+        _verbose(
+            "No se ha proporcionado el resultado de información mutua. "
+            "Se calculará automáticamente.",
+            1,
+            nivel=2
+        )
         resultado = _calc_corr_catg(atributo1, atributo2, verbose=0)
 
     tabla = resultado["tabla"]
@@ -237,7 +363,7 @@ def graficar_informacion_mutua(atributo1, atributo2, resultado=None):
     return fig
 
 
-def graficar_welch(atributo1, atributo2, resultado=None):
+def graficar_welch(atributo1, atributo2, resultado=None, verbose=1):
     """
     Boxplot + puntos individuales por grupo, con la media de cada
     grupo, la media general y el estadístico F de Welch.
@@ -255,6 +381,12 @@ def graficar_welch(atributo1, atributo2, resultado=None):
         raise TypeError("Welch necesita un atributo categórico y otro numérico.")
 
     if resultado is None:
+        _verbose(
+            "No se ha proporcionado el resultado de Welch ANOVA. "
+            "Se calculará automáticamente.",
+            1,
+            nivel=2
+        )
         resultado = _calc_corr_catg_num(atributo1, atributo2, verbose=0)
 
     grupos = resultado["grupos"]
