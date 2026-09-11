@@ -14,9 +14,6 @@ def calcular_metricas(dataset, clases=None, atributos=None, verbose=1):
     clases para AUC
     atributos, por si se quieren calcular solo algunos atributos
     '''
-    #Sirve como router continuo/discreto
-
-
 
     _verbose( "Iniciando cálculo de métricas...", verbose ) 
     _verbose( f"""Parámetros elegidos: \n
@@ -26,84 +23,287 @@ def calcular_metricas(dataset, clases=None, atributos=None, verbose=1):
              verbose, nivel=2 )
 
 
-    if atributos is not None and not isinstance(atributos, list): 
+    if atributos is not None and not isinstance(atributos, list):
+        _verbose(
+            "El parámetro 'atributos' no es una lista.",
+            verbose,
+            nivel=1,
+            tipo="warning"
+        )
         raise TypeError("columnas debe ser una lista o None.")
 
-    # Si es una variable 
-    if _es_variable(dataset):  #Esto iual sobra?
-        return _calcular_metricas_variable( dataset, clases, verbose ) 
-    # Si es un dataset 
-    elif _es_dataset(dataset): 
-        return _calcular_metricas_dataset( dataset, clases, atributos, verbose ) 
+    # Comprobación de clases para AUC
+    if clases is None:
+        _verbose(
+            "No se han proporcionado clases. "
+            "El AUC no se calculará para las variables continuas.",
+            verbose,
+            nivel=1,
+            tipo="warning"
+        )
+    else:
+        _verbose(
+            "Se han proporcionado clases. "
+            "Se calculará el AUC para las variables continuas.",
+            verbose,
+            nivel=2
+        )
 
-    else: 
-        raise TypeError( "dataset debe ser una Series o un DataFrame." )
+    if _es_variable(dataset):
+
+            _verbose(
+                f"Se ha recibido una variable: '{dataset.name}'.",
+                verbose,
+                nivel=1
+            )
+
+            metricas = _calcular_metricas_variable(
+                dataset,
+                clases,
+                verbose
+            )
+
+            _verbose(
+                "Cálculo de métricas finalizado.",
+                verbose,
+                nivel=1,
+                tipo="success"
+            )
+
+            return metricas
+
+        # Si es un dataset
+    elif _es_dataset(dataset):
+
+        _verbose(
+            f"Se ha recibido un dataset con "
+            f"{dataset.shape[0]} filas y {dataset.shape[1]} columnas.",
+            verbose,
+            nivel=1
+        )
+
+        metricas = _calcular_metricas_dataset(
+            dataset,
+            clases,
+            atributos,
+            verbose
+        )
+
+        _verbose(
+            "Cálculo de métricas finalizado correctamente.",
+            verbose,
+            nivel=1,
+            tipo="success"
+        )
+
+        return metricas
+
+    else:
+
+        _verbose(
+            "El objeto recibido no es una Series ni un DataFrame.",
+            verbose,
+            nivel=1,
+            tipo="warning"
+        )
+
+        raise TypeError(
+            "dataset debe ser una Series o un DataFrame."
+        )
 
 
 def _calcular_metricas_dataset(dataset, clases, atributos_clm, verbose=1):
     """Calcular métricas para las columnas de un dataset entero."""
-    
-    metricas = {} 
-    # Si el usuario especifica columnas 
-    if atributos_clm is not None: 
-        for col in atributos_clm: 
-            if col not in dataset.columns: 
-                raise ValueError( f"La columna '{col}' no existe en el dataset." ) 
 
-            metricas[col] = _calcular_metricas_variable(dataset[col], clases, verbose) 
-            return metricas 
-    # Si no se especifican columnas, calculamos para todas las columnas 
-    for col in dataset.columns: 
-        metricas[col] = _calcular_metricas_variable(dataset[col], clases, verbose) 
+    metricas = {}
+
+    if atributos_clm is not None:
+
+        _verbose(
+            f"Se han seleccionado {len(atributos_clm)} atributos "
+            "para calcular sus métricas.",
+            verbose,
+            nivel=1
+        )
+
+        for col in atributos_clm:
+
+            if col not in dataset.columns:
+
+                _verbose(
+                    f"La columna '{col}' no existe en el dataset.",
+                    verbose,
+                    nivel=1,
+                    tipo="warning"
+                )
+
+                raise ValueError(
+                    f"La columna '{col}' no existe en el dataset."
+                )
+
+            _verbose(
+                f"Analizando atributo '{col}'...",
+                verbose,
+                nivel=1
+            )
+
+            metricas[col] = _calcular_metricas_variable(
+                dataset[col],
+                clases,
+                verbose
+            )
+
+        return metricas
+
+    # Si no se especifican columnas, calculamos para todas las columnas
+
+    _verbose(
+        f"No se han especificado atributos. "
+        f"Se analizarán las {len(dataset.columns)} columnas del dataset.",
+        verbose,
+        nivel=1
+    )
+
+    for col in dataset.columns:
+
+        _verbose(
+            f"Analizando atributo '{col}'...",
+            verbose,
+            nivel=1
+        )
+
+        metricas[col] = _calcular_metricas_variable(
+            dataset[col],
+            clases,
+            verbose
+        )
+
     return metricas
 
 
+def _calcular_metricas_variable(columna, clases, verbose=1):
+    """Router para calcular las métricas de una variable."""
 
-def _calcular_metricas_variable(columna, clases, verbose=1): 
-    """Router para calcular las métricas de una variable.""" 
-    if _es_discreta(columna): 
-        _verbose( f"Se ha detectado que '{columna.name}' es discreta."
-                  "Calculando entropía...",
-                    verbose, nivel=1 ) 
-        return _calcular_metricas_discreta( columna, verbose ) 
+    if _es_discreta(columna):
 
-    elif _es_continua(columna): 
-        _verbose( f"Se ha detectado que '{columna.name}' es continua. " 
-                 "Calculando varianza y AUC...", 
-                 verbose, nivel=1 ) 
-        return _calcular_metricas_continua( columna, clases, verbose ) 
-
-    else: 
-        raise TypeError( f"No se puede determinar el tipo de la columna " 
-                        f"'{columna.name}'." )
-
-def _calcular_metricas_discreta(columna, verbose=1): 
-    """Calcula las métricas de una variable discreta.""" 
-    entropia = _calcular_entropia(columna, verbose) 
-    _verbose( f"Entropía calculada: {round(entropia, 4)}", verbose, nivel=2 ) 
-
-    return { "entropia": entropia }
-
-def _calcular_metricas_continua(columna, clases, verbose=1): #Iual demasiado def dentro de def ya se podria hacer afuera
-    """Calcula las métricas de una variable continua.""" 
-    varianza = _calcular_varianza(columna, verbose) 
-    _verbose( f"Varianza calculada: {round(varianza, 4)}", 
-             verbose, nivel=2 ) 
-    
-    if clases is None:
         _verbose(
-            "No se han proporcionado clases. No se calculará el AUC.",
+            f"Se ha detectado que '{columna.name}' es discreta. "
+            "Calculando entropía...",
             verbose,
-            nivel=2
+            nivel=1
         )
-        return {"varianza": varianza} 
-    auc = _calcular_AUC(columna, clases, verbose)
 
-    _verbose( f"AUC calculado: {round(auc, 4)}", verbose, nivel=2 ) 
+        return _calcular_metricas_discreta(
+            columna,
+            verbose
+        )
 
-    return { "varianza": varianza, "auc": auc }
+    elif _es_continua(columna):
+
+        _verbose(
+            f"Se ha detectado que '{columna.name}' es continua. "
+            "Calculando varianza y AUC...",
+            verbose,
+            nivel=1
+        )
+
+        return _calcular_metricas_continua(
+            columna,
+            clases,
+            verbose
+        )
+
+    else:
+
+        _verbose(
+            f"No se puede determinar el tipo de la columna "
+            f"'{columna.name}'.",
+            verbose,
+            nivel=1,
+            tipo="warning"
+        )
+
+        raise TypeError(
+            f"No se puede determinar el tipo de la columna "
+            f"'{columna.name}'."
+        )
 
 
+def _calcular_metricas_discreta(columna, verbose=1):
+    """Calcula las métricas de una variable discreta."""
+
+    _verbose(
+        f"Calculando entropía de '{columna.name}'...",
+        verbose,
+        nivel=2
+    )
+
+    entropia = _calcular_entropia(
+        columna,
+        verbose
+    )
+
+    return {
+        "entropia": entropia
+    }
+
+
+def _calcular_metricas_continua(columna, clases, verbose=1):
+    """Calcula las métricas de una variable continua."""
+
+    _verbose(
+        f"Calculando varianza de '{columna.name}'...",
+        verbose,
+        nivel=2
+    )
+
+    varianza = _calcular_varianza(
+        columna,
+        verbose
+    )
+
+    _verbose(
+        f"Varianza calculada: {round(varianza, 4)}",
+        verbose,
+        nivel=2
+    )
+
+    if clases is None:
+
+        _verbose(
+            "No se han proporcionado clases. "
+            "No se calculará el AUC.",
+            verbose,
+            nivel=1,
+            tipo="warning"
+        )
+
+        return {
+            "varianza": varianza
+        }
+
+    _verbose(
+        f"Calculando AUC de '{columna.name}'...",
+        verbose,
+        nivel=2
+    )
+
+    auc = _calcular_AUC(
+        columna,
+        clases,
+        verbose
+    )
+
+    _verbose(
+        f"AUC calculado: {round(auc, 4)}",
+        verbose,
+        nivel=2
+    )
+
+    return {
+        "varianza": varianza,
+        "auc": auc
+    }
 
 #######################
 # Variables Discretas #
@@ -143,6 +343,12 @@ def _calcular_entropia(atributo_clm, verbose):
     entre 0 y 1 es negativo, y queremos obtener una entropía positiva.
     '''
 
+    _verbose(
+        f"Preparando datos para calcular la entropía "
+        f"de '{atributo_clm.name}'...",
+        verbose,
+        nivel=2
+    )
 
     if pd.isna(atributo_clm).any():
 
@@ -155,20 +361,31 @@ def _calcular_entropia(atributo_clm, verbose):
             nivel=1,
             tipo="warning"
         )
+
         atributo_clm = atributo_clm.dropna()
 
     if len(atributo_clm) == 0:
+
+        _verbose(
+            "El atributo no contiene valores válidos.",
+            verbose,
+            nivel=1,
+            tipo="warning"
+        )
+
         raise ValueError(
             "No se puede calcular la entropía: "
             "el atributo no contiene valores válidos."
         )
-    
+
     atributo_clm = atributo_clm.dropna()
 
-    valores_unicos = set(atributo_clm) # Sacamos los subconjuntos
+    valores_unicos = set(atributo_clm)
+
     _verbose(
-        f"""Número de casos: {len(atributo_clm)} \n
-            Valores unicos: {valores_unicos} """,
+        f"""Datos preparados para la entropía:
+    Número de casos: {len(atributo_clm)}
+    Valores únicos: {valores_unicos}""",
         verbose,
         nivel=2
     )
@@ -178,25 +395,29 @@ def _calcular_entropia(atributo_clm, verbose):
     for valor in valores_unicos:
 
         num_rep = 0
-        for elemento in atributo_clm:
-            if elemento == valor:
-                num_rep += 1 # Contar cuántas veces aparece el valor
 
-        # Probabilidad de ese valor
+        for elemento in atributo_clm:
+
+            if elemento == valor:
+                num_rep += 1
+
         probabilidad = num_rep / len(atributo_clm)
+
         _verbose(
             f"Valor '{valor}': {num_rep} apariciones "
             f"({probabilidad:.2%})",
             verbose,
-            nivel=2
+            nivel=3
         )
 
-        # Añadir su contribución a la entropía
-        entropia -= probabilidad * log2(probabilidad) # El - es clave porque log2 da negativos
-        _verbose(
-            f"Entropía calculada: {entropia:.4f}",
-            verbose
-        )
+        entropia -= probabilidad * log2(probabilidad)
+
+    _verbose(
+        f"Entropía final: {entropia:.4f}",
+        verbose,
+        nivel=2
+    )
+
     return entropia
 
 #######################
@@ -207,18 +428,15 @@ def _calcular_varianza(atributo_clm, verbose):
     '''
     Mide cuánto se dispersan los valores respecto a su media.
     Formula:
-
         Var(X) = (1/n) * sumatorio((xi - media)^2)
-
-        donde:
-
-        n es el número de valores del atributo.
-        xi es cada uno de los valores del atributo.
-        media es la media de todos los valores.
-
-        Una varianza pequeña indica que los valores están cerca de la media.
-        Una varianza grande indica que los valores están más dispersos.
     '''
+
+    _verbose(
+        f"Preparando datos para calcular la varianza "
+        f"de '{atributo_clm.name}'...",
+        verbose,
+        nivel=2
+    )
 
     if pd.isna(atributo_clm).any():
 
@@ -235,12 +453,19 @@ def _calcular_varianza(atributo_clm, verbose):
         atributo_clm = atributo_clm.dropna()
 
     if len(atributo_clm) == 0:
+
+        _verbose(
+            "El atributo no contiene valores válidos.",
+            verbose,
+            nivel=1,
+            tipo="warning"
+        )
+
         raise ValueError(
             "No se puede calcular la varianza: "
             "el atributo no contiene valores válidos."
         )
 
-    # 1. Calcular la media
     suma = 0
 
     for valor in atributo_clm:
@@ -254,18 +479,14 @@ def _calcular_varianza(atributo_clm, verbose):
         nivel=2
     )
 
-    # 2. Calcular las diferencias respecto a la media,
-    #    elevarlas al cuadrado y acumularlas
     suma_diferencias = 0
 
     for valor in atributo_clm:
 
         diferencia = valor - media
         diferencia_cuadrado = diferencia ** 2
-
         suma_diferencias += diferencia_cuadrado
 
-    # 3. Dividir entre el número de valores
     varianza = suma_diferencias / len(atributo_clm)
 
     _verbose(
@@ -276,60 +497,80 @@ def _calcular_varianza(atributo_clm, verbose):
 
     return varianza
 
-def _calcular_AUC(atributo_clm, clases, verbose): #Dataset debe ser supervisado
+
+def _calcular_AUC(atributo_clm, clases, verbose):
     '''
-  AUC (Area Under the ROC Curve) mide la capacidad que tiene una
-    variable numérica para distinguir entre las diferentes clases
-    de una variable binaria.
-
-    El AUC toma valores entre 0 y 1:
-
-    - AUC cercano a 1: el atributo distingue muy bien las clases.
-    - AUC cercano a 0.5: el atributo no permite distinguir las clases.
-    - AUC cercano a 0: el atributo distingue las clases en sentido contrario.
-
-    Para calcularlo se comparan los valores del atributo pertenecientes
-    a cada una de las dos clases.
-
-    Formula:
-
-    AUC = (comparaciones_correctas + 0.5 * empates)
-          / (numero_valores_clase_1 * numero_valores_clase_2)
+    AUC (Area Under the ROC Curve)...
     '''
 
-    _verbose("Iniciando cálculo de AUC...", verbose)
-
+    _verbose(
+        "Iniciando cálculo de AUC...",
+        verbose,
+        nivel=2
+    )
 
     if len(atributo_clm) != len(clases):
+
+        _verbose(
+            "El atributo y las clases tienen diferente número "
+            "de elementos.",
+            verbose,
+            nivel=1,
+            tipo="warning"
+        )
+
         raise ValueError(
             "El atributo y las clases deben tener el mismo número de elementos."
         )
 
     if len(atributo_clm) == 0:
+
+        _verbose(
+            "No se puede calcular el AUC de un atributo vacío.",
+            verbose,
+            nivel=1,
+            tipo="warning"
+        )
+
         raise ValueError(
             "No se puede calcular el AUC de un atributo vacío."
         )
 
     if not _es_continua(atributo_clm):
+
+        _verbose(
+            "El atributo no es numérico y no puede utilizarse "
+            "para calcular el AUC.",
+            verbose,
+            nivel=1,
+            tipo="warning"
+        )
+
         raise TypeError(
             "El atributo debe ser numérico para calcular el AUC."
         )
 
     valores_clases = set(clases)
 
-    if len(valores_clases) != 2: # Para ser binario
+    if len(valores_clases) != 2:
+
+        _verbose(
+            f"Se han detectado {len(valores_clases)} clases. "
+            "El AUC requiere exactamente dos.",
+            verbose,
+            nivel=1,
+            tipo="warning"
+        )
+
         raise ValueError(
             "El atributo clases debe contener exactamente dos clases."
         )
-
 
     _verbose(
         f"Clases detectadas: {valores_clases}",
         verbose,
         nivel=2
     )
-
-    # 1. Separamos los valores del atributo según su clase
 
     clase_1 = list(valores_clases)[0]
     clase_2 = list(valores_clases)[1]
@@ -345,8 +586,17 @@ def _calcular_AUC(atributo_clm, clases, verbose): #Dataset debe ser supervisado
         elif clases.iloc[i] == clase_2:
             valores_clase_2.append(atributo_clm.iloc[i])
 
-    # 2. Comparamos todos los valores de una clase
-    #    con todos los valores de la otra
+    _verbose(
+        f"Elementos de la clase '{clase_1}': {len(valores_clase_1)}",
+        verbose,
+        nivel=2
+    )
+
+    _verbose(
+        f"Elementos de la clase '{clase_2}': {len(valores_clase_2)}",
+        verbose,
+        nivel=2
+    )
 
     comparaciones_correctas = 0
     empates = 0
@@ -361,24 +611,28 @@ def _calcular_AUC(atributo_clm, clases, verbose): #Dataset debe ser supervisado
             elif valor_1 == valor_2:
                 empates += 1
 
-    # 3. Calculamos el número total de comparaciones
-
     total_comparaciones = (
         len(valores_clase_1) * len(valores_clase_2)
     )
 
     if total_comparaciones == 0:
+
+        _verbose(
+            "Una de las clases no tiene valores para comparar.",
+            verbose,
+            nivel=1,
+            tipo="warning"
+        )
+
         raise ValueError(
             "No se puede calcular el AUC porque una de las clases no tiene valores."
         )
 
-    # 4. Calculamos el AUC
-
     auc = (
         comparaciones_correctas + 0.5 * empates
     ) / total_comparaciones
-    auc = max(auc, 1 - auc) # Por si hemos calculado alreves
 
+    auc = max(auc, 1 - auc)
 
     _verbose(
         f"Comparaciones correctas: {comparaciones_correctas}",
