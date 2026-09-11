@@ -26,7 +26,7 @@ Devuelve un nuevo DataFrame con las variables que cumplen los requisitos.
 from SME_python.metricas_de_variables import calcular_metricas
 from auxiliar.verbose import _verbose
 from auxiliar.auxiliar_es import _es_continua, _es_discreta
-
+import pandas as pd
 
 def filtrar_variables(
     dataset,
@@ -36,28 +36,21 @@ def filtrar_variables(
     modo="dentro",
     clases=None,
     atributos=None,
+    metricas=None,
     verbose=1
 ):
     """API PUBLICA"""
 
     _verbose("Iniciando filtrado de variables...", verbose)
 
-    if clases is None and auc is not None:
+    if not isinstance(dataset, pd.DataFrame):
         _verbose(
-            "No se han proporcionado clases. "
-            "El filtro AUC no será evaluado.",
+            "El objeto recibido no es un dataset.",
             verbose,
             tipo="warning"
         )
-
-    if atributos is None:
-        _verbose(
-            "No se han especificado atributos. "
-            "Se evaluarán todas las variables.",
-            verbose,
-            nivel=2
-        )
-
+        raise TypeError("dataset debe ser un DataFrame.")
+    
     if entropia is None and varianza is None and auc is None:
         _verbose(
             "No se ha especificado ningún criterio de filtrado.",
@@ -65,14 +58,46 @@ def filtrar_variables(
             tipo="warning"
         )
 
-    metricas = calcular_metricas(
-        dataset,
-        clases=clases,
-        atributos=atributos,
-        verbose=verbose
-    )
+    if metricas is None:
+        _verbose(
+            "No se han recibido métricas. "
+            "Se calcularán automáticamente.",
+            verbose,
+            nivel=2
+        )
 
 
+        if clases is None and auc is not None:
+            _verbose(
+                "No se han proporcionado clases. "
+                "El filtro AUC no será evaluado.",
+                verbose,
+                tipo="warning"
+            )
+
+        if atributos is None:
+            _verbose(
+                "No se han especificado atributos. "
+                "Se evaluarán todas las variables.",
+                verbose,
+                nivel=2
+            )
+
+        metricas = calcular_metricas(
+            dataset,
+            clases=clases,
+            atributos=atributos,
+            verbose=verbose
+        )
+
+    elif not isinstance(metricas, dict):
+        _verbose(
+            "El objeto recibido no contiene métricas válidas.",
+            verbose,
+            tipo="warning"
+        )
+        raise TypeError("metricas debe ser un diccionario.")
+    
     columnas_validas = []
 
     for columna, valores in metricas.items():

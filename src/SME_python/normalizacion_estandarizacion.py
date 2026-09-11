@@ -74,7 +74,11 @@ def _normalizar_variable(columna, verbose=1):
 
     minimo = columna.min()
     maximo = columna.max()
-
+    _verbose(
+        f"Se han detectado: mínimo={minimo}, máximo={maximo}",
+        verbose,
+        nivel=2
+    )
     if maximo == minimo:
         raise ValueError(
             f"No se puede normalizar '{columna.name}': "
@@ -94,7 +98,11 @@ def _estandarizar_variable(columna, verbose=1):
 
     media = columna.mean()
     desviacion = columna.std()
-
+    _verbose(
+        f"Se han detectado: media={media}, desviacion={desviacion}",
+        verbose,
+        nivel=2
+    )
     if desviacion == 0:
         raise ValueError(
             f"No se puede estandarizar '{columna.name}': "

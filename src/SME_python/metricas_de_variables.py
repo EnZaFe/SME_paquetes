@@ -117,6 +117,25 @@ def _calcular_metricas_dataset(dataset, clases, atributos_clm, verbose=1):
 
     metricas = {}
 
+    if clases is not None:
+
+        if isinstance(clases, str):
+
+            if clases not in dataset.columns:
+                raise ValueError(
+                    f"La columna de clases '{clases}' "
+                    "no existe en el dataset."
+                )
+
+            clases = dataset[clases]
+
+        elif not isinstance(clases, pd.Series):
+
+            raise TypeError(
+                "clases debe ser el nombre de una columna "
+                "o una Series."
+            )
+        
     if atributos_clm is not None:
 
         _verbose(
@@ -259,7 +278,7 @@ def _calcular_metricas_continua(columna, clases, verbose=1):
             "varianza": varianza
         }
 
-
+    
     auc = _calcular_AUC(
         columna,
         clases,
@@ -465,8 +484,8 @@ def _calcular_AUC(atributo_clm, clases, verbose):
     if len(atributo_clm) != len(clases):
 
         _verbose(
-            "El atributo y las clases tienen diferente número "
-            "de elementos.",
+            "El atributo y las clases tienen diferente número"
+            f"de elementos {len(atributo_clm)} /= {len(clases)}",
             verbose,
             nivel=1,
             tipo="warning"

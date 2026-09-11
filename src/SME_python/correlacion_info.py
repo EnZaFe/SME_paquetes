@@ -451,30 +451,51 @@ def _calc_corr_catg_num(
     n_grupos = {}
     medias = {}
     varianzas = {}
+    grupos_validos = []
 
     for grupo in grupos:
 
         valores = y[x == grupo]
 
         if len(valores) < 2:
-            raise ValueError(
-                f"El grupo '{grupo}' no tiene suficientes observaciones."
+            _verbose(
+                f"El grupo '{grupo}' no tiene suficientes observaciones "
+                "y será excluido del cálculo.",
+                verbose,
+                nivel=1,
+                tipo="warning"
             )
+            continue
 
         valores_grupos[grupo] = valores
         n_grupos[grupo] = len(valores)
         medias[grupo] = valores.mean()
         varianzas[grupo] = valores.var()
 
+        if varianzas[grupo] == 0:
+            _verbose(
+                f"El grupo '{grupo}' tiene varianza 0 "
+                "y será excluido del cálculo.",
+                verbose,
+                nivel=1,
+                tipo="warning"
+            )
+            del valores_grupos[grupo]
+            del n_grupos[grupo]
+            del medias[grupo]
+            del varianzas[grupo]
+            continue
+        grupos_validos.append(grupo)
+
+    grupos = grupos_validos
+
+    if len(grupos) < 2:
+        raise ValueError(
+            "No hay suficientes grupos válidos para calcular Welch ANOVA."
+        )
     pesos = {}
 
-    for grupo in grupos:
-
-        if varianzas[grupo] == 0:
-            raise ValueError(
-                f"La varianza del grupo '{grupo}' es 0."
-            )
-
+    for grupo in grupos: # me he marcado 3 fors, que se pueden meter en el mismo fijo
         pesos[grupo] = n_grupos[grupo] / varianzas[grupo]
 
     suma_pesos = sum(pesos.values())
