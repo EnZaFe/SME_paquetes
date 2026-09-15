@@ -8,8 +8,8 @@ discretización = transformar una variable continua/numérica en categorías o i
 
 
 '''
-from auxiliar.verbose import _verbose
-from auxiliar.auxiliar_es import _es_dataset, _es_variable, _es_continua
+from python.src.auxiliar.verbose import _verbose
+from python.src.auxiliar.auxiliar_es import _es_dataset, _es_variable, _es_continua
 import pandas as pd
 
 def discretizar(datos, metodo="anchura", n_intervalos=None,

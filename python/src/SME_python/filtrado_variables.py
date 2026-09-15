@@ -23,9 +23,9 @@ todas las condiciones correspondientes a cada variable.
 
 Devuelve un nuevo DataFrame con las variables que cumplen los requisitos.
 '''
-from SME_python.metricas_de_variables import calcular_metricas
-from auxiliar.verbose import _verbose
-from auxiliar.auxiliar_es import _es_continua, _es_discreta
+from python.src.SME_python.metricas_de_variables import calcular_metricas
+from python.src.auxiliar.verbose import _verbose
+from python.src.auxiliar.auxiliar_es import _es_continua, _es_discreta
 import pandas as pd
 
 def filtrar_variables(

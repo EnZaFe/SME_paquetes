@@ -13,7 +13,7 @@ Objetivos:
 import pandas as pd
 import pytest
 
-from SME_python.discretizacion import discretizar
+from python.src.SME_python.discretizacion import discretizar
 
 
 # ============================================================

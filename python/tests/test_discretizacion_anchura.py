@@ -11,8 +11,8 @@ Objetivos:
 
 import pandas as pd
 import pytest
-from SME_python.discretizacion import discretizar
-from auxiliar.load_dataset import load_dataset
+from python.src.SME_python.discretizacion import discretizar
+from python.src.auxiliar.load_dataset import load_dataset
 
 # ============================================================
 # TESTS DE DISCRETIZACIÓN POR IGUAL ANCHURA

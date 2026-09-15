@@ -4,10 +4,10 @@ import seaborn as sns
 import pandas as pd
 import numpy as np
 
-from auxiliar.auxiliar_es import _es_dataset, _es_variable, _es_discreta, _es_continua
-from SME_python.metricas_de_variables import _calcular_AUC
-from SME_python.correlacion_info import _calc_corr_num, _calc_corr_catg, _calc_corr_catg_num
-from auxiliar.verbose import _verbose
+from python.src.auxiliar.auxiliar_es import _es_dataset, _es_variable, _es_discreta, _es_continua
+from python.src.SME_python.metricas_de_variables import _calcular_AUC
+from python.src.SME_python.correlacion_info import _calc_corr_num, _calc_corr_catg, _calc_corr_catg_num
+from python.src.auxiliar.verbose import _verbose
 
 sns.set_theme(style="whitegrid", context="talk")
 PALETA = "viridis"

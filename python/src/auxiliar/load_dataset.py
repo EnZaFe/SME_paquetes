@@ -9,7 +9,7 @@
 
 import pandas as pd
 from sklearn.datasets import load_iris
-from auxiliar.verbose import _verbose
+from python.src.auxiliar.verbose import _verbose
 
 def load_dataset(dataset="iris", verbose=1):
     """Cargar un dataset y devolverlo como DataFrame.
