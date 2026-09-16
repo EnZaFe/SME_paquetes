@@ -303,10 +303,6 @@ def _calc_corr_num(
 
     r = numerador / denominador
 
-    # Recta de regresión y = pendiente * x + intercepto, útil para
-    # el gráfico sin tener que volver a tocar los datos.
-    pendiente, intercepto = np.polyfit(x, y, 1)
-
     if normalizar:
         # TODO:
         # Normalizar el resultado de Pearson a [0, 1].
@@ -317,8 +313,6 @@ def _calc_corr_num(
         "valor": r,
         "r2": r ** 2,
         "n": n,
-        "pendiente": pendiente,
-        "intercepto": intercepto,
         "nombre1": nombre1,
         "nombre2": nombre2,
         "x": x,
