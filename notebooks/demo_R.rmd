@@ -6,9 +6,24 @@ date: "2026-09-14"
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
+options(repos = c(CRAN = "https://cloud.r-project.org"))
 ```
 
+```{r}
+devtools::install_github(
+  "EnZaFe/SME_paquetes",
+  subdir = "R/src/SME_R"
+)
+```
 
 ```{r}
-dat <- read.table("car data.csv", sep=";", header=TRUE)
+devtools::install("C:/Users/Burbu/Desktop/SME_Python/R")
+```
+
+```{r}
+dat <- read.table("./notebooks/car data.csv", sep = ";", header = TRUE)
+```
+
+```{r}
+dat
 ```

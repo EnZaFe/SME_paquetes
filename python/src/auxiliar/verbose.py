@@ -24,6 +24,7 @@ def _verbose(mensaje, verbose, nivel=1, tipo="info"):
 
     elif tipo == "error":
         print(f"\033[91mERROR: {mensaje}\033[0m")
+        raise RuntimeError(mensaje)
 
     elif tipo == "success":
         print(f"\033[92m{mensaje}\033[0m")

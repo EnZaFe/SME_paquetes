@@ -1,4 +1,3 @@
-# 1 atributo --- dataset entero 
 '''
 Enunciado:
 Algoritmos de discretización para un solo atributo y para un dataset completo (ambas opciones): Igual frecuencia e igual anchura
@@ -14,7 +13,11 @@ import pandas as pd
 
 def discretizar(datos, metodo="anchura", n_intervalos=None,
                 frecuencia=None, columnas=None, verbose=1):
-    """API PÚBLICA: discretizar una variable o un dataset."""
+    """
+    **Objetivo**: discretizar una variable o un dataset.
+    
+    **Uso**: SME_python.discretizar(df, metodo='anchura', n_intervalos=5, columnas=['Edad', 'Dinero'], verbose=0)
+    """
 
     _verbose('Iniciando discretizacion...', verbose)
     _verbose(f'''Parametros elegidos: 
