@@ -3,7 +3,11 @@ from python.src.auxiliar.auxiliar_es import _es_dataset, _es_variable, _es_discr
 import pandas as pd
 
 def normalizar(dataset, atributos=None, verbose=1):
-    '''API PUBLICA'''
+    """Normaliza una variable o un dataset a escala [0, 1] (min-max).
+
+        normalizar(series) -> pd.Series en [0, 1]
+        normalizar(df, atributos=[...]) -> pd.DataFrame con columnas transformadas
+    """
     
     _verbose("Iniciando normalización...", verbose)
 
@@ -19,7 +23,11 @@ def normalizar(dataset, atributos=None, verbose=1):
 
 
 def estandarizar(dataset, atributos=None, verbose=1):
-    '''API PUBLICA'''
+    """Estandariza una variable o un dataset con puntuación z (media 0, desviación 1).
+
+        estandarizar(series) -> pd.Series
+        estandarizar(df, atributos=[...]) -> pd.DataFrame con columnas transformadas
+    """
 
     _verbose("Iniciando estandarización...", verbose)
 
@@ -34,7 +42,11 @@ def estandarizar(dataset, atributos=None, verbose=1):
     )
 
 def _transformar_dataset(dataset, atributos, funcion, verbose=1):
-    """Aplica una transformación a las variables numéricas."""
+    """Aplica ``funcion`` a cada variable continua de un dataset.
+
+    Para una serie se aplica directamente; para un DataFrame se transforma
+    solo las columnas continuas (las discretas quedan sin cambios).
+    """
 
     if _es_variable(dataset):
         return funcion(dataset, verbose)

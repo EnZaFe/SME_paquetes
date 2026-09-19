@@ -39,7 +39,35 @@ def filtrar_variables(
     metricas=None,
     verbose=1
 ):
-    """API PUBLICA"""
+    """Filtra las variables de un dataset según sus métricas.
+
+    Se pueden combinar varios criterios (entropía, varianza y/o AUC). Una
+    variable se conserva solo si cumple todas las condiciones especificadas.
+    Si ``metricas`` no se pasa, se calculan automáticamente con
+    :func:`calcular_metricas`.
+
+        filtrar_variables(df, entropia=(0.5, 1)) -> df con variables que cumplen
+        filtrar_variables(df, varianza=(5, 7), modo="dentro") -> df filtrado
+
+    Parámetros
+    ----------
+    dataset : pd.DataFrame
+        Datos a filtrar.
+    entropia, varianza, auc : tuple o None
+        Intervalo ``(min, max)`` que la métrica debe cumplir. Los extremos
+        pueden ser ``None`` para dejarlos abiertos.
+    modo : str
+        ``"dentro"`` (el valor está dentro del intervalo) o ``"fuera"``
+        (el valor está fuera del intervalo).
+    clases : str o pd.Series, opcional
+        Columna binaria necesaria para calcular el AUC.
+    atributos : list, opcional
+        Variables a evaluar. Si no se pasa, todas.
+    metricas : dict, opcional
+        Métricas precalculadas ``{columna: {...}}``. Si no se pasa, se calculan.
+    verbose : int, opcional
+        Nivel de detalle del registro.
+    """
 
     _verbose("Iniciando filtrado de variables...", verbose)
 

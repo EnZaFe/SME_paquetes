@@ -127,17 +127,15 @@ def _titulo_pregunta(fig, pregunta):
 # 1) AUC / Curva ROC
 # ============================================================
 
-def graficar_auc(atributo_clm, clases, 
-                 resultado=None, 
-                 pregunta=None, 
-                 verbose=1, 
-                path=".", 
-                nombre_carpeta="figures"):
-    
-    carpeta_salida = Path(path) / nombre_carpeta
-    carpeta_salida.mkdir(parents=True, exist_ok=True)
-
-
+def graficar_auc(
+    atributo_clm,
+    clases,
+    resultado=None,
+    pregunta=None,
+    verbose=1,
+    path=".",
+    nombre_carpeta="figures"
+):
     """
     Curva ROC + distribución del atributo numérico por clase.
 
@@ -147,14 +145,43 @@ def graficar_auc(atributo_clm, clases,
             -> calcula el AUC automáticamente
 
         graficar_auc(atributo_clm, clases, resultado=info)
-            -> reutiliza un AUC ya calculado
+            -> reutiliza un AUC ya calculado (evita recalcularlo)
 
     Parameters
     ----------
+    atributo_clm : pandas.Series
+        Atributo numérico (score/probabilidad del modelo).
+
+    clases : list o pandas.Series
+        Etiquetas de clase, exactamente dos. Deben tener el mismo
+        número de elementos que ``atributo_clm``.
+
+    resultado : dict, opcional
+        Diccionario con el AUC ya calculado (por ejemplo devuelto por
+        ``_calcular_AUC``). Si se pasa, no se recalcula.
+
     pregunta : str, opcional
         Pregunta que responde el gráfico. Si no se indica, se genera
         una automáticamente a partir del nombre del atributo.
+
+    verbose : int
+        Nivel de información mostrado durante la ejecución.
+
+    path : str
+        Carpeta base donde se guarda la imagen.
+
+    nombre_carpeta : str
+        Nombre de la subcarpeta (por defecto ``figures``).
+
+    Returns
+    -------
+    fig : matplotlib.figure.Figure
+        Figura con la curva ROC y la distribución por clase, guardada
+        como ``demo_auc.png`` en la carpeta de salida.
     """
+
+    carpeta_salida = Path(path) / nombre_carpeta
+    carpeta_salida.mkdir(parents=True, exist_ok=True)
 
     if len(atributo_clm) != len(clases):
         raise ValueError(
@@ -337,14 +364,15 @@ def graficar_auc(atributo_clm, clases,
 # 2) Correlación de Pearson
 # ============================================================
 
-def graficar_pearson(atributo1, atributo2, 
-                     resultado=None, 
-                     pregunta=None, verbose=1, 
-                     path=".", 
-                     nombre_carpeta="figures"):
-    carpeta_salida = Path(path) / nombre_carpeta
-    carpeta_salida.mkdir(parents=True, exist_ok=True)
-
+def graficar_pearson(
+    atributo1,
+    atributo2,
+    resultado=None,
+    pregunta=None,
+    verbose=1,
+    path=".",
+    nombre_carpeta="figures"
+):
     """
     Dispersión + regresión lineal + distribuciones marginales entre
     dos variables numéricas, junto con el coeficiente de Pearson.
@@ -354,8 +382,44 @@ def graficar_pearson(atributo1, atributo2,
 
         graficar_pearson(x, y, resultado=info)
             -> reutiliza un resultado ya calculado con
-               _calc_corr_num / calcular_correlacion
+               ``_calc_corr_num`` / ``calcular_correlacion``
+
+    Parameters
+    ----------
+    atributo1 : pandas.Series
+        Primera variable numérica.
+
+    atributo2 : pandas.Series
+        Segunda variable numérica. Debe tener el mismo número de
+        elementos que ``atributo1``.
+
+    resultado : dict, opcional
+        Diccionario con el resultado de Pearson ya calculado (por
+        ejemplo devuelto por ``_calc_corr_num``). Si se pasa, no se
+        recalcula.
+
+    pregunta : str, opcional
+        Pregunta que responde el gráfico. Si no se indica, se genera
+        una automáticamente a partir de los nombres de las variables.
+
+    verbose : int
+        Nivel de información mostrado durante la ejecución.
+
+    path : str
+        Carpeta base donde se guarda la imagen.
+
+    nombre_carpeta : str
+        Nombre de la subcarpeta (por defecto ``figures``).
+
+    Returns
+    -------
+    fig : matplotlib.figure.Figure
+        Figura del jointplot (dispersión + marginales), guardada como
+        ``pearson.png`` en la carpeta de salida.
     """
+
+    carpeta_salida = Path(path) / nombre_carpeta
+    carpeta_salida.mkdir(parents=True, exist_ok=True)
 
 
     if len(atributo1) != len(atributo2):
@@ -443,23 +507,61 @@ def graficar_pearson(atributo1, atributo2,
 # 3) Información mutua entre dos categóricas
 # ============================================================
 
-def graficar_informacion_mutua(atributo1, 
-                               atributo2, 
-                               resultado=None, 
-                               pregunta=None, 
-                               verbose=1, 
-                               path=".", 
-                               nombre_carpeta="figures"):
+def graficar_informacion_mutua(
+    atributo1,
+    atributo2,
+    resultado=None,
+    pregunta=None,
+    verbose=1,
+    path=".",
+    nombre_carpeta="figures"
+):
+    """
+    Heatmap de la tabla de contingencia entre dos variables categóricas,
+    con frecuencias absolutas y relativas, y la información mutua entre
+    ambas.
+
+        graficar_informacion_mutua(a1, a2)
+            -> calcula todo internamente
+
+        graficar_informacion_mutua(a1, a2, resultado=info)
+            -> reutiliza un resultado ya calculado con ``_calc_corr_catg``
+
+    Parameters
+    ----------
+    atributo1 : pandas.Series
+        Primera variable categórica/discreta.
+
+    atributo2 : pandas.Series
+        Segunda variable categórica/discreta. Debe tener el mismo
+        número de elementos que ``atributo1``.
+
+    resultado : dict, opcional
+        Diccionario con la información mutua ya calculada (por ejemplo
+        devuelto por ``_calc_corr_catg``). Si se pasa, no se recalcula.
+
+    pregunta : str, opcional
+        Pregunta que responde el gráfico. Si no se indica, se genera
+        una automáticamente a partir de los nombres de las variables.
+
+    verbose : int
+        Nivel de información mostrado durante la ejecución.
+
+    path : str
+        Carpeta base donde se guarda la imagen.
+
+    nombre_carpeta : str
+        Nombre de la subcarpeta (por defecto ``figures``).
+
+    Returns
+    -------
+    fig : matplotlib.figure.Figure
+        Figura con los dos heatmaps y el valor de MI, guardada como
+        ``MI.png`` en la carpeta de salida.
+    """
 
     carpeta_salida = Path(path) / nombre_carpeta
     carpeta_salida.mkdir(parents=True, exist_ok=True)
-
-
-    """
-    Heatmap de la tabla de contingencia entre dos variables
-    categóricas, con frecuencias absolutas y relativas, y la
-    información mutua entre ambas.
-    """
 
     if len(atributo1) != len(atributo2):
         raise ValueError(
@@ -546,31 +648,73 @@ def graficar_informacion_mutua(atributo1,
 # 4) Welch ANOVA
 # ============================================================
 
-def graficar_welch(atributo1, atributo2, resultado=None, pregunta=None,
-                    orden_categorias=None, 
-                    verbose=1, 
-                    path=".", 
-                    nombre_carpeta="figures"):
-    carpeta_salida = Path(path) / nombre_carpeta
-    carpeta_salida.mkdir(parents=True, exist_ok=True)
-
+def graficar_welch(
+    atributo1,
+    atributo2,
+    resultado=None,
+    pregunta=None,
+    orden_categorias=None,
+    verbose=1,
+    path=".",
+    nombre_carpeta="figures"
+):
     """
     Boxplot + puntos individuales por grupo, con la media de cada
-    grupo, la media general y el estadístico F de Welch.
+    grupo, la media general y el estadístico F de Welch ANOVA.
+
+        graficar_welch(grupo, valor)
+            -> calcula todo internamente
+
+        graficar_welch(grupo, valor, orden_categorias=[...])
+            -> usa una secuencia real para conectar las medias
 
     Parameters
     ----------
+    atributo1 : pandas.Series
+        Variable categórica/discreta que define los grupos.
+
+    atributo2 : pandas.Series
+        Variable numérica medida dentro de cada grupo. Debe tener el
+        mismo número de elementos que ``atributo1``.
+
+    resultado : dict, opcional
+        Diccionario con el resultado de Welch ANOVA ya calculado (por
+        ejemplo devuelto por ``_calc_corr_catg_num``). Si se pasa, no
+        se recalcula.
+
+    pregunta : str, opcional
+        Pregunta que responde el gráfico. Si no se indica, se genera
+        una automáticamente a partir de los nombres de las variables.
+
     orden_categorias : list, opcional
         Úsalo SOLO si las categorías comparten una secuencia real
         (años, trimestres, fases de un proceso...). En ese caso las
         medias de los grupos se conectan con una línea, porque la
         conexión afirma correctamente una relación de orden que de
         verdad existe (05 CONECTIVIDAD).
-        Si no se indica, los grupos se ordenan de mayor a menor
-        media (06 CONTINUIDAD) y NO se conectan entre sí, porque no
-        hay ninguna relación de orden real que la línea pueda
-        afirmar sin engañar.
+        Si no se indica, los grupos se ordenan de mayor a menor media
+        (06 CONTINUIDAD) y NO se conectan entre sí, porque no hay
+        ninguna relación de orden real que la línea pueda afirmar sin
+        engañar.
+
+    verbose : int
+        Nivel de información mostrado durante la ejecución.
+
+    path : str
+        Carpeta base donde se guarda la imagen.
+
+    nombre_carpeta : str
+        Nombre de la subcarpeta (por defecto ``figures``).
+
+    Returns
+    -------
+    fig : matplotlib.figure.Figure
+        Figura con el boxplot, las medias y el estadístico F, guardada
+        como ``welch.png`` en la carpeta de salida.
     """
+
+    carpeta_salida = Path(path) / nombre_carpeta
+    carpeta_salida.mkdir(parents=True, exist_ok=True)
 
     if len(atributo1) != len(atributo2):
         raise ValueError(
@@ -698,6 +842,16 @@ def graficar_welch(atributo1, atributo2, resultado=None, pregunta=None,
 # ============================================================
 
 def main():
+    """
+    Demostración de los cuatro tipos de gráfico del módulo.
+
+    Genera un ejemplo para cada técnica (AUC/ROC, Pearson,
+    información mutua y Welch ANOVA) con datos sintéticos, y guarda
+    las figuras en la carpeta ``figures``.
+
+    No se conecta a ningún dataset real: sirve como referencia visual
+    de cómo se comporta cada gráfico y de cómo aplicar el tema Gestalt.
+    """
 
     # Nota: se corrige el orden de los argumentos respecto al
     # ejemplo original (atributo numérico primero, clases después).

@@ -26,6 +26,11 @@ def load_dataset(dataset="iris", verbose=1):
     -------
     pandas.DataFrame
         El dataset cargado.
+
+    Raises
+    ------
+    ValueError
+        Si el dataset solicitado no está soportado todavía.
     """
     _verbose(f"Cargando dataset '{dataset}'...", verbose)
 
@@ -45,7 +50,22 @@ def load_dataset(dataset="iris", verbose=1):
 def load_csv(ruta, verbose=1):
     """Cargar un dataset desde un archivo CSV.
 
-    TODO: implementar la lectura real del CSV.
+    Parámetros
+    ----------
+    ruta : str
+        Ruta al archivo CSV a leer.
+    verbose : int
+        Nivel de verbosidad (0 = nada, 1 = básico).
+
+    Devuelve
+    -------
+    pandas.DataFrame
+        El dataset cargado (no implementado todavía).
+
+    Raises
+    ------
+    NotImplementedError
+        Si la lectura de CSV no ha sido implementada.
     """
     _verbose(f"Cargando CSV desde '{ruta}'...", verbose)
     # TODO: df = pd.read_csv(ruta)
@@ -53,9 +73,24 @@ def load_csv(ruta, verbose=1):
 
 
 def load_tsv(ruta, verbose=1):
-    """Cargar un dataset desde un archivo TSV.
+    """Cargar un dataset desde un archivo TSV (tab-separated values).
 
-    TODO: implementar la lectura real del TSV.
+    Parámetros
+    ----------
+    ruta : str
+        Ruta al archivo TSV a leer.
+    verbose : int
+        Nivel de verbosidad (0 = nada, 1 = básico).
+
+    Devuelve
+    -------
+    pandas.DataFrame
+        El dataset cargado (no implementado todavía).
+
+    Raises
+    ------
+    NotImplementedError
+        Si la lectura de TSV no ha sido implementada.
     """
     _verbose(f"Cargando TSV desde '{ruta}'...", verbose)
     # TODO: df = pd.read_csv(ruta, sep="\t")
@@ -65,7 +100,24 @@ def load_tsv(ruta, verbose=1):
 def load_excel(ruta, hoja=0, verbose=1):
     """Cargar un dataset desde un archivo Excel.
 
-    TODO: implementar la lectura real del Excel.
+    Parámetros
+    ----------
+    ruta : str
+        Ruta al archivo Excel a leer.
+    hoja : int, por defecto 0
+        Índice de la hoja a leer (0 = primera hoja).
+    verbose : int
+        Nivel de verbosidad (0 = nada, 1 = básico).
+
+    Devuelve
+    -------
+    pandas.DataFrame
+        El dataset cargado (no implementado todavía).
+
+    Raises
+    ------
+    NotImplementedError
+        Si la lectura de Excel no ha sido implementada.
     """
     _verbose(f"Cargando Excel desde '{ruta}' (hoja {hoja})...", verbose)
     # TODO: df = pd.read_excel(ruta, sheet_name=hoja)
@@ -75,7 +127,18 @@ def load_excel(ruta, hoja=0, verbose=1):
 def router(dataset="iris", verbose=1):
     """Enrutador simple: elige el loader según el tipo de dataset.
 
-    Por ahora solo soporta datasets in-memory (ej. "iris").
+    Parámetros
+    ----------
+    dataset : str, por defecto "iris"
+        Nombre del dataset a cargar. Por ahora solo se soporta el iris
+        (in-memory vía scikit-learn).
+    verbose : int
+        Nivel de verbosidad (0 = nada, 1 = básico).
+
+    Devuelve
+    -------
+    pandas.DataFrame
+        El dataset cargado.
     """
     return load_dataset(dataset, verbose)
 

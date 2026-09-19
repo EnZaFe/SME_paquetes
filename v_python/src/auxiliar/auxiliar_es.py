@@ -1,18 +1,72 @@
 #Codigo auiliar con metodos que se usan en varias funcionalidades
 import pandas as pd
+
+
 def _es_variable(datos):
-    """Devuelve True si `datos` es una variable numérica (pd.Series)."""
+    """
+    Determina si `datos` es una variable numérica.
+
+    Una variable es un ``pd.Series`` cuyo tipo de dato es numérico.
+    No basta con ser un ``Series``: debe contener números (enteros o
+    decimales).
+
+    Parameters
+    ----------
+    datos : object
+        Valor a comprobar.
+
+    Returns
+    -------
+    bool
+        ``True`` si es un ``pd.Series`` numérico, ``False`` en caso
+        contrario.
+    """
     return (
         isinstance(datos, pd.Series)
         and pd.api.types.is_numeric_dtype(datos)
     )
 
+
 def _es_dataset(datos):
-    """Devuelve True si `datos` es un dataset (DataFrame)."""
+    """
+    Determina si `datos` es un dataset.
+
+    Un dataset es cualquier ``pd.DataFrame`` (tabla con filas y columnas).
+
+    Parameters
+    ----------
+    datos : object
+        Valor a comprobar.
+
+    Returns
+    -------
+    bool
+        ``True`` si es un ``pd.DataFrame``, ``False`` en caso contrario.
+    """
     return isinstance(datos, pd.DataFrame)
 
+
 def _es_continua(columna):
-    """Devuelve True si una columna contiene valores numéricos."""
+    """
+    Determina si una columna representa una variable continua.
+
+    Es continua cuando pandas la reconoce como numérica o cuando sus
+    valores ``object`` pueden convertirse a números sin error (por
+    ejemplo una columna de enteros leídos como texto).
+
+    WARNING: Esto puede ser peligroso si se utilizan numeros enteros para representar variables categoricas '1': Rojo, '2': Verde...
+
+    Parameters
+    ----------
+    columna : pandas.Series
+        Columna a comprobar.
+
+    Returns
+    -------
+    bool
+        ``True`` si la columna es numérica o convertible a numérica,
+        ``False`` en caso contrario.
+    """
 
     # Si pandas ya sabe que es numérica.
     if pd.api.types.is_numeric_dtype(columna):
@@ -37,7 +91,25 @@ def _es_continua(columna):
 
 
 def _es_discreta(columna):
-    """Devuelve True si una columna contiene valores discretos/categóricos."""
+    """
+    Determina si una columna representa una variable discreta/categórica.
+
+    Es discreta cuando es booleana, categórica (``CategoricalDtype``),
+    de tipo string, o ``object`` con valores simples (no listas,
+    diccionarios ni conjuntos). Una columna que sea continua nunca se
+    considera discreta.
+
+    Parameters
+    ----------
+    columna : pandas.Series
+        Columna a comprobar.
+
+    Returns
+    -------
+    bool
+        ``True`` si la columna contiene valores categóricos,
+        ``False`` en caso contrario.
+    """
 
     # Booleanos.
     if pd.api.types.is_bool_dtype(columna):

@@ -8,12 +8,26 @@ import pandas as pd
 from math import log2
 
 def calcular_metricas(dataset, clases=None, atributos=None, verbose=1):
-    '''API PUBLICA
-    
-    dataset para tener la info
-    clases para AUC
-    atributos, por si se quieren calcular solo algunos atributos
-    '''
+    """Calcula las métricas de una variable o de un dataset completo.
+
+    Para variables discretas se calcula la entropía; para las continuas,
+    la varianza. Si se proporciona ``clases`` (una columna binaria), además
+    se calcula el AUC de cada variable continua respecto a esa clase.
+
+        calcular_metricas(series) -> dict con 'entropia' o {'varianza', 'auc'}
+        calcular_metricas(df, clases='etiqueta') -> dict {columna: {...}}
+
+    Parámetros
+    ----------
+    dataset : pd.Series o pd.DataFrame
+        Variable o conjunto de datos a analizar.
+    clases : str o pd.Series, opcional
+        Columna binaria con la que evaluar el AUC de las variables continuas.
+    atributos : list, opcional
+        Columnas específicas a analizar. Si no se pasa, se analizan todas.
+    verbose : int, opcional
+        Nivel de detalle del registro (0 = silencioso).
+    """
 
     _verbose( "Iniciando cálculo de métricas...", verbose ) 
     _verbose( f"""Parámetros elegidos: \n
@@ -300,39 +314,12 @@ def _calcular_metricas_continua(columna, clases, verbose=1):
 # Variables Discretas #
 #######################
 def _calcular_entropia(atributo_clm, verbose):
-    ''' Explicacion para saber exacto que estamos haciendo:
-    La entropía mide cuánta incertidumbre o diversidad hay respecto a las clases de una variable objetivo. Si todos los ejemplos pertenecen a la misma clase, la entropía es 0 porque no existe incertidumbre. Cuanto más repartidos estén los ejemplos entre las distintas clases, mayor será la entropía.
+    """Entropía de la distribución de valores de un atributo discreto.
 
-    Para calcular la entropía esperada de un atributo A:
-
-    E(D,A) = sumatorio(v pertenece a Valores(A))
-            (|Dv| / |D|) * E(Dv)
-
-    Valores(A) son los distintos valores que puede tomar el atributo A.
-
-    Dv es el subconjunto de datos formado por los ejemplos cuyo atributo A
-    toma el valor v.
-
-    (|Dv| / |D|) es el peso proporcional de ese subconjunto respecto al
-    dataset completo.
-
-    E(Dv) es la entropía de las clases dentro del subconjunto Dv.
-
-
-    La entropía del dataset D se calcula como:
-
-    E(D) = - sumatorio(c pertenece a Clases)
-        (|Dc| / |D|) * log2(|Dc| / |D|)
-
-    Clases son los distintos valores que puede tomar la variable objetivo.
-
-    Dc es el subconjunto de datos que pertenece a la clase c.
-
-    (|Dc| / |D|) es la proporción de ejemplos que pertenecen a la clase c.
-
-    El signo negativo se utiliza porque el logaritmo de una probabilidad
-    entre 0 y 1 es negativo, y queremos obtener una entropía positiva.
-    '''
+    Mide la incertidumbre de los valores: 0 si todos son iguales y máxima
+    cuando están uniformemente repartidos. Se usa como métrica de las
+    variables discretas (análogo a la varianza para atributos categóricos).
+    """
 
     if pd.isna(atributo_clm).any():
 
@@ -476,9 +463,12 @@ def _calcular_varianza(atributo_clm, verbose):
 
 
 def _calcular_AUC(atributo_clm, clases, verbose):
-    '''
-    AUC (Area Under the ROC Curve)...
-    '''
+    """AUC por comparación de pares entre las dos clases.
+
+    Cuenta cuántas veces un valor de la clase 1 supera a uno de la clase 2,
+    promediando los empates como 0.5. Al ser binario, ``auc`` y ``1 - auc``
+    describen el mismo separador, por lo que se devuelve ``max(auc, 1 - auc)``.
+    """
 
 
     if len(atributo_clm) != len(clases):

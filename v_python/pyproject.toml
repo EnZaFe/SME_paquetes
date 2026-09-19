@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "sme-python"
-version = "0.1.1"
+version = "0.1.2"
 description = "Librería para la gestión y análisis de datasets (discretización, métricas, normalización, filtrado, correlación e información mutua)."
 readme = "README.md"
 requires-python = ">=3.9"
