@@ -124,7 +124,7 @@ def _discretizar_anchura(columna_variable, n_intervalos, verbose=1):
 
     if n_intervalos > num_casos:
         raise ValueError(
-            f"""n_intervalos {n_intervalos} no puede ser mayor que el número de casos {num_casos}."""
+            f"n_intervalos {n_intervalos} no puede ser mayor que el número de casos {num_casos}."
     )
     # algoritmo de discretización por igual anchura.
     minimo = columna_variable.min()
@@ -196,7 +196,7 @@ def _discretizar_frecuencia(columna_variable, n_intervalos, frecuencia, verbose=
             raise ValueError("n_intervalos debe ser mayor que 0.")
         if n_intervalos > num_casos:
             raise ValueError(
-                f"""n_intervalos {n_intervalos} no puede ser mayor que el número de casos {num_casos}."""
+                f"n_intervalos {n_intervalos} no puede ser mayor que el número de casos {num_casos}."
         )
         # calcular frecuencia
         frecuencia = num_casos // n_intervalos
@@ -216,7 +216,7 @@ def _discretizar_frecuencia(columna_variable, n_intervalos, frecuencia, verbose=
             raise ValueError("frecuencia debe ser mayor que 0.")
         if frecuencia > num_casos:
             raise ValueError(
-                f"""frecuencia {frecuencia} no puede ser mayor que el número de casos {num_casos}."""
+                f"frecuencia {frecuencia} no puede ser mayor que el número de casos {num_casos}."
         )
         #calcular intervalos
         n_intervalos= num_casos // frecuencia
