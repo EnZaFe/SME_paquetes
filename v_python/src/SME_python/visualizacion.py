@@ -62,10 +62,10 @@ import pandas as pd
 import numpy as np
 from pathlib import Path
 
-from auxiliar.auxiliar_es import _es_dataset, _es_variable, _es_discreta, _es_continua
-from SME_python.metricas_de_variables import _calcular_AUC
-from SME_python.correlacion_info import _calc_corr_num, _calc_corr_catg, _calc_corr_catg_num
-from auxiliar.verbose import _verbose
+from v_python.src.auxiliar.auxiliar_es import _es_dataset, _es_variable, _es_discreta, _es_continua
+from v_python.src.SME_python.metricas_de_variables import _calcular_AUC
+from v_python.src.SME_python.correlacion_info import _calc_corr_num, _calc_corr_catg, _calc_corr_catg_num
+from v_python.src.auxiliar.verbose import _verbose
 
 
 # ============================================================

@@ -17,7 +17,7 @@ def _verbose(mensaje, verbose, nivel=1, tipo="info"):
 
     Tipos
     -----
-    ``warning`` -> amarillo; además levanta un ``RuntimeError``.
+    ``warning`` -> amarillo.
     ``error`` -> rojo; además levanta un ``RuntimeError``.
     ``success`` -> verde.
     Cualquier otro valor (incluido ``info``) -> se colorea según el

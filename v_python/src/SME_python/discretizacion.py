@@ -7,8 +7,8 @@ discretización = transformar una variable continua/numérica en categorías o i
 
 
 '''
-from python.src.auxiliar.verbose import _verbose
-from python.src.auxiliar.auxiliar_es import _es_dataset, _es_variable, _es_continua
+from v_python.src.auxiliar.verbose import _verbose
+from v_python.src.auxiliar.auxiliar_es import _es_dataset, _es_variable, _es_continua
 import pandas as pd
 
 def discretizar(datos, metodo="anchura", n_intervalos=None,
@@ -19,7 +19,7 @@ def discretizar(datos, metodo="anchura", n_intervalos=None,
         discretizar(series) -> una sola columna (pd.Series)
         discretizar(df, columnas=[...]) -> varias columnas a la vez
         discretizar(df) -> todas las columnas numéricas del DataFrame
-    
+    """
 
     _verbose('Iniciando discretizacion...', verbose)
     _verbose(f'''Parametros elegidos: 
@@ -80,7 +80,7 @@ def _discretizar_dataset(dataset, metodo,
             df[col] = _discretizar_variable(df[col], metodo, n_intervalos, frecuencia, verbose)
         return df # FINISH
 
-    # Cuando no se indican columnas concretas, se discretizan todas las numéricas del dataset.
+    # TODO: En caso de dataset entero columnas NONE? Con definir arriba las columnas TODAS las numericas en caso de NONE suficiente  no?
     df = dataset.copy()
     for col in df.select_dtypes(include="number").columns:
         df[col] = _discretizar_variable(df[col], metodo, n_intervalos, frecuencia, verbose)
@@ -107,7 +107,7 @@ def _discretizar_anchura(columna_variable, n_intervalos, verbose=1):
     if n_intervalos is None: 
         n_intervalos = round(len(columna_variable) * 0.50)
         
-        n_intervalos = max(1, n_intervalos)
+        n_intervalos = max(1, n_intervalos) ## Como mínimo habrá 1 intervalo 
         _verbose( f"No se ha especificado n_intervalos. " 
                  f"Se utilizarán {n_intervalos} intervalos "
                  f"(50% del número de casos).", 
@@ -137,7 +137,7 @@ def _discretizar_anchura(columna_variable, n_intervalos, verbose=1):
     _verbose(f"Mínimo: {round(float(minimo), 2)}", verbose, nivel=2)
     _verbose(f"Máximo: {round(float(maximo), 2)}", verbose, nivel=2)
 
-    anchura = (maximo - minimo) / n_intervalos
+    anchura = (maximo - minimo) / n_intervalos # Aqui sacamos el tamaño que necesita cada intervalo
     _verbose(
         f"Anchura de los intervalos: {round(float(anchura), 2)}",
         verbose,
@@ -145,7 +145,7 @@ def _discretizar_anchura(columna_variable, n_intervalos, verbose=1):
     )
     intervalos = []
 
-    for i in range(n_intervalos + 1):
+    for i in range(n_intervalos + 1): # Creamos [min, min+anchura*1, min+anchura*2,..., max]
         intervalo = minimo + i * anchura
         intervalos.append(intervalo)
 
@@ -163,17 +163,16 @@ def _discretizar_anchura(columna_variable, n_intervalos, verbose=1):
 
     for valor in columna_variable:
         for i in range(n_intervalos):
-            if valor <= intervalos[i + 1]:
+            if valor <= intervalos[i + 1]: # Si el valor real es mayor que el rango superior del intervalo siguiente
                 resultado.append((
-                    round(float(intervalos[i]), 2),
-                    round(float(intervalos[i + 1]), 2)
+                    round(float(intervalos[i]), 2), # Por comodidad round y float
+                    round(float(intervalos[i + 1]), 2) # Por comodidad round y float
                 ))
                 break
 
     return resultado
 
 def _discretizar_frecuencia(columna_variable, n_intervalos, frecuencia, verbose=1):
-    """Discretización por igual frecuencia (cada intervalo contiene ~la misma cantidad de casos)."""
     
     if n_intervalos is not None and frecuencia is not None:
         raise ValueError(
@@ -257,14 +256,14 @@ def _discretizar_frecuencia(columna_variable, n_intervalos, frecuencia, verbose=
     posicion=0
     for i in range(n_intervalos): 
         meter_sobrante=0
-        if i < sobrantes:
+        if i < sobrantes: #Vamos añadiendo a cada grupo del primero al ultimo un sobrante hasta que deje de haberlos
             meter_sobrante = 1
 
         grupo = valores_ordenados[posicion:posicion+frecuencia+meter_sobrante]
 
-        grupos.append(grupo)
+        grupos.append(grupo) #Aqui el vector de valores del intervalo # Esto a lo m ejor incluso sobra directamente
 
-        intervalos.append((
+        intervalos.append(( #Aqui nos quedamos con min_max de intervalo
             float(grupo[0]),
             float(grupo[-1])
         ))
@@ -273,7 +272,7 @@ def _discretizar_frecuencia(columna_variable, n_intervalos, frecuencia, verbose=
 
     resultado = []
 
-    for valor in columna_variable:
+    for valor in columna_variable: # MUy marronero ponerlo por separado?
 
         for i in range(n_intervalos):
 

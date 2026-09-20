@@ -2,8 +2,8 @@
 enunciado:
 Cálculo de métricas para los atributos de un dataset: varianza y AUC para las variables contínuas y entropía para las discretas. La función deberá reconocer el tipo de atributo y actuar en consecuencia. Notese que en el caso del AUC, el dataset debe ser supervisado, es decir, es necesario especificar una variable clase binaria con la que evaluar el AUC de los atributos numéricos.
 '''
-from python.src.auxiliar.verbose import _verbose 
-from python.src.auxiliar.auxiliar_es import _es_dataset, _es_variable, _es_discreta,_es_continua
+from v_python.src.auxiliar.verbose import _verbose 
+from v_python.src.auxiliar.auxiliar_es import _es_dataset, _es_variable, _es_discreta,_es_continua
 import pandas as pd
 from math import log2
 

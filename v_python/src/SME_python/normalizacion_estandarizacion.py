@@ -1,5 +1,5 @@
-from python.src.auxiliar.verbose import _verbose 
-from python.src.auxiliar.auxiliar_es import _es_dataset, _es_variable, _es_discreta,_es_continua
+from v_python.src.auxiliar.verbose import _verbose
+from v_python.src.auxiliar.auxiliar_es import _es_dataset, _es_variable, _es_discreta,_es_continua
 import pandas as pd
 
 def normalizar(dataset, atributos=None, verbose=1):

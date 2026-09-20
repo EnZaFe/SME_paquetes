@@ -1,0 +1,17 @@
+Package: SME_R
+Type: Package
+Title: SME - Statistical and Machine Learning Utilities
+Version: 0.1.0
+Authors@R: 
+    person(
+        "EnZaFe",
+        role = c("aut", "cre")
+    )
+Description: 
+    Statistical and machine learning utilities for data analysis,
+    including correlation analysis, discretization, filtering,
+    variable metrics, normalization, standardization, and visualization.
+License: MIT
+Encoding: UTF-8
+Roxygen: list(markdown = TRUE)
+Config/roxygen2/version: 8.1.0
