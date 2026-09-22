@@ -1,7 +1,3 @@
-# Sourcear funciones auxiliares (verbose y helpers de tipo/verificación)
-source("../auxiliar/verbose.R")
-source("../auxiliar/auxiliar_es.r")
-
 
 #' Normalización (min-max) y estandarización (z-score) de variables o datasets.
 #'
