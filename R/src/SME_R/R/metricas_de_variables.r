@@ -1,5 +1,4 @@
-source("../auxiliar/verbose.R")
-source("../auxiliar/auxiliar_es.r")
+
 #' Cálculo de métricas para los atributos de un dataset: entropía para las discretas, varianza y AUC para las continuas.
 #' La función reconoce el tipo de atributo y actúa en consecuencia. En el caso del AUC, el dataset debe ser supervisado,
 #' es decir, es necesario especificar una variable clase binaria con la que evaluar el AUC de los atributos numéricos.

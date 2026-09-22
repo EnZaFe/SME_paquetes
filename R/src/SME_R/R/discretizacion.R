@@ -1,5 +1,3 @@
-source("../auxiliar/verbose.R")
-source("../auxiliar/auxiliar_es.r")
 
 #' Algoritmos de discretización para un solo atributo y para un dataset completo.
 #'

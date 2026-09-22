@@ -1,6 +1,3 @@
-source("../auxiliar/verbose.R")
-source("../auxiliar/auxiliar_es.r")
-
 
 #' Filtra las variables de un dataset según sus métricas.
 #'

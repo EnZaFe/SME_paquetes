@@ -1,6 +1,4 @@
-# Sourcear funciones auxiliares (verbose y helpers de tipo/verificación)
-source("../auxiliar/verbose.R")
-source("../auxiliar/auxiliar_es.r")
+
 
 
 #' Tema visual Gestalt: paleta semántica y configuración global.
