@@ -1,267 +1,239 @@
-# Cargar cualquier tipo de dataset y devolverlo como un data.frame.
-#
-# Este archivo replica en R la utilidad `router()` / `load_dataset()` del
-# paquete Python `SME_python` (ver `v_python/src/auxiliar/load_dataset.py`).
 #
 # Formatos soportados:
-#   - Datasets de scikit-learn por nombre: "iris", "wine", "breast_cancer"
-#   - CSV  (.csv, .txt)  -> separador autodetectado (, ; tab |)
-#   - TSV  (.tsv, .tab)
-#   - Excel (.xlsx, .xlsm, .xls, .ods)
+#   - Datasets por nombre: "iris", "wine", "breast_cancer"
+#   - CSV / TXT  (.csv, .txt)  -> separador autodetectado (, ; tab |)
+#   - TSV        (.tsv, .tab) -> separador tab por defecto
+#   - Excel      (.xlsx, .xlsm, .xls, .ods)
+#   - data.frame -> se devuelve tal cual
 #
-# Uso rápido:
-#   df <- cargar("iris")
-#   df <- cargar("notebooks/car data.csv")
-#   df <- cargar("datos/ventas.xlsx", hoja = "Enero")
+# Uso rapido:
+#   df <- cargar_dataset("iris")
+#   df <- cargar_dataset("notebooks/car data.csv")
+#   df <- cargar_dataset("datos/ventas.xlsx", hoja = "Enero")
 
 # ---------------------------------------------------------------------------
-# Dependencias (se instalan si no están disponibles)
+# Constantes internas (equivalentes a _EXCEL_EXT / _TEXTO_EXT en Python)
 # ---------------------------------------------------------------------------
-if (!requireNamespace("readr", quietly = TRUE)) {
-  install.packages("readr")
-}
-if (!requireNamespace("readxl", quietly = TRUE)) {
-  install.packages("readxl")
-}
+.EXCEL_EXT <- c("xlsx", "xlsm", "xls", "ods")
+.TEXTO_EXT <- c("csv", "txt", "tsv", "tab")
 
 # ---------------------------------------------------------------------------
-# Datasets de scikit-learn por nombre
+# Loaders de datasets por nombre (equivalente a _SKLEARN_DATASETS)
 # ---------------------------------------------------------------------------
-# scikit-learn no está disponible en R, así que se cargan datasets pequeños
-# equivalentes desde datasets() del paquete base.
-_DATASETS_POR_NOMBRE <- list(
-  iris = datasets::iris,
-  wine = datasets::wine,
-  breast_cancer = # aproximación: no hay un dataset idéntico en R; usar un pequeño placeholder
-    NULL
+# Se definen como funciones (no como valores ya evaluados) para que instalar
+# o cargar un paquete solo ocurra si realmente se pide ese dataset.
+.cargar_iris <- function() {
+  datasets::iris
+}
+
+.cargar_wine <- function() {
+  # No hay un dataset "wine" en R base; el equivalente habitual es
+  # rattle.data::wine (mismos datos que sklearn.datasets.load_wine).
+  if (!requireNamespace("rattle.data", quietly = TRUE)) {
+    install.packages("rattle.data")
+  }
+  as.data.frame(rattle.data::wine)
+}
+
+.cargar_breast_cancer <- function() {
+  # Aproximacion: no existe un equivalente identico a
+  # sklearn.datasets.load_breast_cancer en R. Se usa mlbench::BreastCancer,
+  # que es el dataset de cancer de mama de referencia en R (columnas y
+  # codificacion distintas a la version de sklearn).
+  if (!requireNamespace("mlbench", quietly = TRUE)) {
+    install.packages("mlbench")
+  }
+  env <- new.env()
+  utils::data("BreastCancer", package = "mlbench", envir = env)
+  as.data.frame(env[["BreastCancer"]])
+}
+
+.DATASETS_POR_NOMBRE <- list(
+  iris = .cargar_iris,
+  wine = .cargar_wine,
+  breast_cancer = .cargar_breast_cancer
 )
 
 # ---------------------------------------------------------------------------
 # Helpers internos
 # ---------------------------------------------------------------------------
-.es_variable <- function(datos) {
-  # Una variable es un vector (no un data.frame).
-  is.vector(datos) || is.factor(datos)
-}
-
-.es_dataset <- function(datos) {
-  is.data.frame(datos)
-}
-
-.es_continua <- function(columna) {
-  # Continua si es numérica o convertible a numérica sin error.
-  if (is.numeric(columna)) {
-    return(TRUE)
-  }
-  if (is.character(columna)) {
-    valores <- columna[!is.na(columna)]
-    if (length(valores) == 0) {
-      return(FALSE)
-    }
-    suppressWarnings(as.numeric(valores))
-    !any(is.na(suppressWarnings(as.numeric(valores))))
-  } else {
-    FALSE
-  }
-}
 
 # Mensajes informativos (equivalente a _verbose() de Python).
-_verbose <- function(mensaje, verbose, nivel = 1, tipo = "info") {
-  if (isTRUE(verbose < nivel)) {
-    return(invisible(NULL))
-  }
-
-  if (identical(tipo, "warning")) {
-    warning(mensaje, call. = FALSE)
-  } else if (identical(tipo, "error")) {
-    stop(mensaje, call. = FALSE)
-  } else if (identical(tipo, "success")) {
-    message(mensaje)
-  } else if (nivel == 1) {
-    message(mensaje)
-  } else {
+.verbose_msg <- function(mensaje, verbose) {
+  if (isTRUE(verbose >= 1)) {
     message(mensaje)
   }
+  invisible(NULL)
+}
+
+# Autodeteccion de separador para texto delimitado (equivalente aproximado
+# a csv.Sniffer().sniff(muestra, delimiters=",;\t|") en Python).
+.detectar_separador <- function(muestra) {
+  candidatos <- c(",", ";", "\t", "|")
+  lineas <- strsplit(muestra, "\r\n|\n")[[1]]
+  lineas <- lineas[nzchar(lineas)]
+  if (length(lineas) == 0) {
+    return(",")
+  }
+
+  puntuar <- function(sep) {
+    conteos <- lengths(regmatches(lineas, gregexpr(sep, lineas, fixed = TRUE)))
+    # Buen separador: aparece de forma consistente (misma cantidad) en todas
+    # las lineas de muestra, y al menos una vez.
+    if (all(conteos == conteos[1]) && conteos[1] > 0) {
+      conteos[1]
+    } else {
+      -1
+    }
+  }
+
+  puntuaciones <- vapply(candidatos, puntuar, numeric(1))
+  if (all(puntuaciones < 0)) {
+    return(",")  # si no se detecta nada consistente, se asume coma
+  }
+  candidatos[[which.max(puntuaciones)]]
 }
 
 # ---------------------------------------------------------------------------
-# Loaders por nombre
+# API publica
 # ---------------------------------------------------------------------------
-cargar_dataset <- function(dataset = "iris", verbose = 1) {
-  # Carga un dataset de scikit-learn por nombre y lo devuelve como data.frame.
-  _verbose(paste0("Cargando dataset '", dataset, "'..."), verbose)
-
-  if (is.null(_DATASETS_POR_NOMBRE[[dataset]])) {
-    soportados <- paste(names(_DATASETS_POR_NOMBRE), collapse = ", ")
-    stop(sprintf(
-      "Dataset '%s' no soportado. Disponibles: %s.",
-      dataset, soportados
-    ))
-  }
-
-  df <- as.data.frame(_DATASETS_POR_NOMBRE[[dataset]])
-  _verbose(
-    sprintf("Dataset '%s' cargado: %d filas x %d columnas.",
-            dataset, nrow(df), ncol(df)),
-    verbose
-  )
-  df
-}
-
-# ---------------------------------------------------------------------------
-# Loaders de archivos
-# ---------------------------------------------------------------------------
-cargar_csv <- function(ruta, sep = NULL, encoding = NULL, verbose = 1, ...) {
-  # Carga un dataset desde un archivo CSV.
-  _verbose(sprintf("Cargando CSV desde '%s'...", ruta), verbose)
-
-  if (!file.exists(ruta)) {
-    stop(sprintf("No existe el archivo: '%s'", ruta))
-  }
-
-  codificaciones <- if (is.null(encoding)) {
-    c("UTF-8", "UTF-8-BOM", "latin1")
-  } else {
-    encoding
-  }
-
-  ultimo_error <- NULL
-  for (enc in codificaciones) {
-    tryCatch({
-      separador <- if (is.null(sep)) {
-        # Autodetección del separador mirando el primer bloque.
-        withCallingHandlers(
-          readLines(ruta, n = 65536, encoding = enc, warn = FALSE),
-          warning = function(w) {
-            if (grepl("separator", conditionMessage(w), fixed = TRUE)) {
-              stop(w, call. = FALSE)
-            }
-          }
-        )
-        "," # si no se puede detectar, se asume coma
-      } else {
-        sep
-      }
-
-      df <- readr::read_csv(
-        ruta,
-        delim = if (sep == "\t") "\t" else sep,
-        show_col_types = FALSE,
-        col_types = readr::cols(.default = readr::col_guess()),
-        ...
-      )
-      _verbose(
-        sprintf("Cargado: %d filas x %d columnas.", nrow(df), ncol(df)),
-        verbose
-      )
-      return(df)
-    }, error = function(e) {
-      ultimo_error <- e
-    })
-  }
-
-  stop(ultimo_error)
-}
-
-cargar_tsv <- function(ruta, encoding = NULL, verbose = 1, ...) {
-  # Carga un dataset desde un archivo TSV (tab-separated values).
-  _verbose(sprintf("Cargando TSV desde '%s'...", ruta), verbose)
-
-  if (!file.exists(ruta)) {
-    stop(sprintf("No existe el archivo: '%s'", ruta))
-  }
-
-  codificaciones <- if (is.null(encoding)) {
-    c("UTF-8", "UTF-8-BOM", "latin1")
-  } else {
-    encoding
-  }
-
-  ultimo_error <- NULL
-  for (enc in codificaciones) {
-    tryCatch({
-      df <- readr::read_tsv(
-        ruta,
-        show_col_types = FALSE,
-        col_types = readr::cols(.default = readr::col_guess()),
-        ...
-      )
-      _verbose(
-        sprintf("Cargado: %d filas x %d columnas.", nrow(df), ncol(df)),
-        verbose
-      )
-      return(df)
-    }, error = function(e) {
-      ultimo_error <- e
-    })
-  }
-
-  stop(ultimo_error)
-}
-
-cargar_excel <- function(ruta, hoja = 0, verbose = 1, ...) {
-  # Carga un dataset desde un archivo Excel.
-  _verbose(sprintf("Cargando Excel desde '%s' (hoja %s)...", ruta, hoja), verbose)
-
-  if (!file.exists(ruta)) {
-    stop(sprintf("No existe el archivo: '%s'", ruta))
-  }
-
-  tryCatch({
-    df <- readxl::read_excel(ruta, sheet = hoja, ...)
-    _verbose(
-      sprintf("Cargado: %d filas x %d columnas.", nrow(df), ncol(df)),
-      verbose
-    )
-    df
-  }, error = function(e) {
-    stop(sprintf(
-      "%s\nInstala el motor necesario: `install.packages('readxl')`",
-      conditionMessage(e)
-    ))
-  })
-}
-
-# ---------------------------------------------------------------------------
-# Enrutador
-# ---------------------------------------------------------------------------
-cargar <- function(dataset = "iris", verbose = 1, ...) {
-  # Enrutador: elige el loader según lo que se le pase y devuelve un data.frame.
+cargar_dataset <- function(dataset = "iris", sep = NULL, encoding = NULL,
+                            hoja = 0, verbose = 1, ...) {
+  # Cargar un dataset (por nombre, ruta o data.frame) y devolverlo como
+  # data.frame.
   #
-  #   cargar("iris")                              -> dataset de scikit-learn
-  #   cargar("notebooks/car data.csv")            -> CSV (sep autodetectado)
-  #   cargar("datos/ventas.xlsx", hoja = "Enero") -> Excel por nombre de hoja
-  #   cargar(df)                                  -> devuelve el df tal cual
+  # Parametros
+  # ----------
+  # dataset  : character | data.frame, por defecto "iris"
+  #     - Nombre de un dataset "de juguete" ("iris", "wine", "breast_cancer").
+  #     - Ruta a un archivo .csv/.txt, .tsv/.tab o .xlsx/.xlsm/.xls/.ods.
+  #     - Un data.frame (se devuelve tal cual).
+  # sep      : character opcional. Separador para archivos de texto. Si es
+  #     NULL se autodetecta entre `,` `;` tab y `|` (tab por defecto para
+  #     .tsv/.tab).
+  # encoding : character opcional. Si es NULL se prueba "UTF-8" y luego
+  #     "latin1", que es lo habitual en CSV exportados desde Excel/Windows.
+  # hoja     : integer | character, por defecto 0 (primera hoja). Solo para
+  #     Excel; puede ser el indice (0 = primera) o el nombre de la hoja.
+  # verbose  : integer. 0 = nada, 1 = mensajes basicos.
+  # ...      : argumentos extra pasados a readr::read_csv/read_tsv o a
+  #     readxl::read_excel.
+  #
+  # Devuelve
+  # -------
+  # data.frame con el dataset cargado.
 
-  if (.es_dataset(dataset)) {
+  # 0) Ya es un data.frame: se devuelve tal cual.
+  if (is.data.frame(dataset)) {
+    .verbose_msg("Ya es un data.frame, se devuelve tal cual.", verbose)
     return(dataset)
   }
 
-  extension <- tolower(tools::file_ext(dataset))
+  ruta <- dataset
+  ext <- tolower(tools::file_ext(ruta))
 
-  # 1) Archivo con extensión conocida -> loader por extensión
-  loaders <- c(
-    csv = cargar_csv,
-    tsv = cargar_tsv,
-    xlsx = cargar_excel,
-    xlsm = cargar_excel,
-    xls = cargar_excel,
-    ods = cargar_excel
+  # 1) Sin extension -> nombre de dataset "de juguete".
+  if (!nzchar(ext)) {
+    .verbose_msg(sprintf("Cargando dataset '%s'...", ruta), verbose)
+
+    loader <- .DATASETS_POR_NOMBRE[[ruta]]
+    if (is.null(loader)) {
+      soportados <- paste(names(.DATASETS_POR_NOMBRE), collapse = ", ")
+      stop(sprintf(
+        "Dataset '%s' no soportado. Disponibles: %s.", ruta, soportados
+      ))
+    }
+    df <- as.data.frame(loader())
+
+  } else {
+    # 2) Con extension -> archivo. Tiene que existir.
+    if (!file.exists(ruta)) {
+      stop(sprintf("No existe el archivo: '%s'", ruta))
+    }
+
+    # 2a) Excel (autodetectado por extension).
+    if (ext %in% .EXCEL_EXT) {
+      if (!requireNamespace("readxl", quietly = TRUE)) {
+        install.packages("readxl")
+      }
+      .verbose_msg(
+        sprintf("Cargando Excel desde '%s' (hoja %s)...", ruta, hoja), verbose
+      )
+      hoja_arg <- if (identical(hoja, 0)) 1L else hoja  # readxl usa 1-indexado
+      df <- tryCatch(
+        as.data.frame(readxl::read_excel(ruta, sheet = hoja_arg, ...)),
+        error = function(e) {
+          stop(sprintf(
+            "%s\nInstala el motor necesario: `install.packages('readxl')`",
+            conditionMessage(e)
+          ))
+        }
+      )
+
+    # 2b) Texto delimitado (CSV/TXT/TSV/TAB).
+    } else if (ext %in% .TEXTO_EXT) {
+      if (!requireNamespace("readr", quietly = TRUE)) {
+        install.packages("readr")
+      }
+      .verbose_msg(sprintf("Cargando texto delimitado desde '%s'...", ruta), verbose)
+
+      separador <- sep
+      if (is.null(separador) && ext %in% c("tsv", "tab")) {
+        separador <- "\t"
+      }
+
+      codificaciones <- if (is.null(encoding)) c("UTF-8", "latin1") else encoding
+
+      df <- NULL
+      ultimo_error <- NULL
+      for (i in seq_along(codificaciones)) {
+        enc <- codificaciones[[i]]
+        resultado <- tryCatch({
+          sep_usado <- separador
+          if (is.null(sep_usado)) {
+            muestra <- tryCatch(
+              paste(readLines(ruta, n = 200, encoding = enc, warn = FALSE),
+                    collapse = "\n"),
+              error = function(e) stop(e)
+            )
+            sep_usado <- .detectar_separador(muestra)
+            .verbose_msg(sprintf("Separador detectado: '%s'", sep_usado), verbose)
+          }
+          readr::read_delim(
+            ruta,
+            delim = sep_usado,
+            locale = readr::locale(encoding = enc),
+            show_col_types = FALSE,
+            ...
+          )
+        }, error = function(e) e)
+
+        if (!inherits(resultado, "error")) {
+          df <- resultado
+          break
+        }
+        ultimo_error <- resultado
+        .verbose_msg(
+          sprintf("Codificacion '%s' no valida, probando otra...", enc), verbose
+        )
+      }
+
+      if (is.null(df)) {
+        stop(ultimo_error)
+      }
+      df <- as.data.frame(df)
+
+    # 2c) Extension desconocida.
+    } else {
+      soportadas <- paste(c(.TEXTO_EXT, .EXCEL_EXT), collapse = ", ")
+      stop(sprintf(
+        "Extension '%s' no soportada. Soportadas: %s.", ext, soportadas
+      ))
+    }
+  }
+
+  .verbose_msg(
+    sprintf("Cargado: %d filas x %d columnas.", nrow(df), ncol(df)), verbose
   )
-
-  if (!is.null(extension) && extension %in% names(loaders)) {
-    return(loaders[[extension]](dataset, verbose = verbose, ...))
-  }
-
-  # 2) Archivo existente con extensión no soportada
-  if (file.exists(dataset)) {
-    soportadas <- paste(names(loaders), collapse = ", ")
-    stop(sprintf(
-      "Extensión '%s' no soportada. Soportadas: %s.",
-      extension, soportadas
-    ))
-  }
-
-  # 3) Si no, se interpreta como nombre de dataset
-  cargar_dataset(dataset, verbose)
+  df
 }
