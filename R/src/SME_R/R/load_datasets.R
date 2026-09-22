@@ -94,34 +94,55 @@
   candidatos[[which.max(puntuaciones)]]
 }
 
-# ---------------------------------------------------------------------------
-# API publica
-# ---------------------------------------------------------------------------
+#' Cargar un dataset
+#'
+#' Carga un dataset a partir de su nombre, una ruta de archivo o un
+#' `data.frame` y devuelve un `data.frame`.
+#'
+#' Permite cargar datasets de ejemplo por nombre, archivos CSV/TSV y
+#' archivos Excel. También acepta directamente un `data.frame`, que se
+#' devuelve sin modificaciones.
+#'
+#' @param dataset `character` o `data.frame`. Dataset que se desea cargar.
+#'   Puede ser:
+#'   \itemize{
+#'     \item Un nombre de dataset, como `"iris"`, `"wine"` o
+#'       `"breast_cancer"`.
+#'     \item Una ruta a un archivo `.csv`, `.txt`, `.tsv`, `.tab`,
+#'       `.xlsx`, `.xlsm`, `.xls` u `.ods`.
+#'     \item Un `data.frame`, que se devuelve tal cual.
+#'   }
+#' @param sep `character` opcional. Separador utilizado para archivos de
+#'   texto. Si es `NULL`, se intenta autodetectar entre `,`, `;`, tabulador
+#'   y `|`. Para archivos `.tsv` y `.tab` se utiliza tabulador por defecto.
+#' @param encoding `character` opcional. Codificación del archivo. Si es
+#'   `NULL`, se prueban codificaciones habituales como `"UTF-8"` y
+#'   `"latin1"`.
+#' @param hoja `integer` o `character`. Hoja que se desea cargar en archivos
+#'   Excel. Puede ser un índice (`0` para la primera hoja) o el nombre de
+#'   la hoja.
+#' @param verbose `integer`. Nivel de mensajes informativos. `0` no muestra
+#'   mensajes y `1` muestra mensajes básicos durante la carga.
+#' @param ... Argumentos adicionales que se pasan al lector correspondiente,
+#'   como `readr::read_csv()`, `readr::read_tsv()` o
+#'   `readxl::read_excel()`.
+#'
+#' @return Un `data.frame` que contiene el dataset cargado.
+#'
+#' @examples
+#' # Cargar el dataset iris
+#' df <- cargar_dataset("iris")
+#'
+#' # Cargar directamente un data.frame
+#' datos <- data.frame(
+#'   x = 1:3,
+#'   y = c("a", "b", "c")
+#' )
+#' df <- cargar_dataset(datos)
+#'
+#' @export
 cargar_dataset <- function(dataset = "iris", sep = NULL, encoding = NULL,
                             hoja = 0, verbose = 1, ...) {
-  # Cargar un dataset (por nombre, ruta o data.frame) y devolverlo como
-  # data.frame.
-  #
-  # Parametros
-  # ----------
-  # dataset  : character | data.frame, por defecto "iris"
-  #     - Nombre de un dataset "de juguete" ("iris", "wine", "breast_cancer").
-  #     - Ruta a un archivo .csv/.txt, .tsv/.tab o .xlsx/.xlsm/.xls/.ods.
-  #     - Un data.frame (se devuelve tal cual).
-  # sep      : character opcional. Separador para archivos de texto. Si es
-  #     NULL se autodetecta entre `,` `;` tab y `|` (tab por defecto para
-  #     .tsv/.tab).
-  # encoding : character opcional. Si es NULL se prueba "UTF-8" y luego
-  #     "latin1", que es lo habitual en CSV exportados desde Excel/Windows.
-  # hoja     : integer | character, por defecto 0 (primera hoja). Solo para
-  #     Excel; puede ser el indice (0 = primera) o el nombre de la hoja.
-  # verbose  : integer. 0 = nada, 1 = mensajes basicos.
-  # ...      : argumentos extra pasados a readr::read_csv/read_tsv o a
-  #     readxl::read_excel.
-  #
-  # Devuelve
-  # -------
-  # data.frame con el dataset cargado.
 
   # 0) Ya es un data.frame: se devuelve tal cual.
   if (is.data.frame(dataset)) {
