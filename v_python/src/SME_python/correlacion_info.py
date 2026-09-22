@@ -1,5 +1,5 @@
-from v_python.src.auxiliar.verbose import _verbose
-from v_python.src.auxiliar.auxiliar_es import (
+from auxiliar.verbose import _verbose
+from auxiliar.auxiliar_es import (
     _es_dataset,
     _es_variable,
     _es_discreta,

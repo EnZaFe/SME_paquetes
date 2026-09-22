@@ -1,92 +1,59 @@
-"""
-graficos_gestalt.py
-====================
-
-Tema visual personalizado para gráficos estadísticos, construido
-aplicando seis principios de la psicología de la Gestalt a la
-percepción de datos. Cada decisión de diseño está comentada en el
-código con el número de principio que la justifica.
-
-Título de cada gráfico
------------------------
-El título ya no es una etiqueta técnica ("Curva ROC", "Welch ANOVA")
-sino la PREGUNTA a la que responde el gráfico. Cada función acepta
-un parámetro `pregunta`; si no se indica, se genera una por defecto
-a partir de los nombres de las variables.
-
-01 · PROXIMIDAD
-    La distancia entre grupos pesa más que una leyenda lejana. En
-    vez de leyendas en una esquina, las etiquetas y los valores
-    clave (AUC, r, media, información mutua...) se anclan justo
-    encima o al lado del elemento gráfico al que describen.
-
-02 · COMPLECIÓN
-    La mente rellena lo que falta: cuanto más ruido visual
-    (bordes, rejillas, marcos innecesarios) hay que descartar, más
-    esfuerzo cuesta leer el dato. Se retira todo lo que no aporte
-    lectura: `sns.despine`, rejillas mínimas, sin marco superior/
-    derecho, ticks sin marca donde no hacen falta.
-
-03 · SEMEJANZA
-    Mismo significado, mismo código visual, en TODO el módulo:
-      - COLOR_DATO      -> algo que se midió / recabó directamente.
-      - COLOR_ESTIMADO  -> algo derivado, ajustado o resumido
-                            (regresión, medias de grupo, densidad
-                            estimada, información mutua...).
-      - COLOR_REFERENCIA-> una referencia teórica o neutra (azar,
-                            media general).
-    El coral no se usa nunca "porque queda bien": se usa siempre y
-    solo para decir "esto es una estimación".
-
-04 · CIERRE
-    La parte del gráfico que es una estimación —y no un dato
-    recabado— se encierra visualmente (recuadro, banda sombreada)
-    para que el ojo la agrupe como "una cosa aparte" de los datos
-    crudos.
-
-05 · CONECTIVIDAD
-    Una línea afirma relación y orden. Solo se conectan con línea
-    los puntos que comparten de verdad una secuencia (p. ej. el
-    umbral de una curva ROC, o categorías temporales explícitas).
-    No se conectan categorías nominales sin orden real.
-
-06 · CONTINUIDAD
-    La mirada sigue la trayectoria más fluida. Donde no hay una
-    secuencia real que respetar, los datos se ordenan de mayor a
-    menor para que la lectura fluya en una sola dirección.
-"""
-
-import matplotlib.pyplot as plt
-import seaborn as sns
-import pandas as pd
-import numpy as np
+import re
+import textwrap
 from pathlib import Path
 
-from v_python.src.auxiliar.auxiliar_es import _es_dataset, _es_variable, _es_discreta, _es_continua
-from v_python.src.SME_python.metricas_de_variables import _calcular_AUC
-from v_python.src.SME_python.correlacion_info import _calc_corr_num, _calc_corr_catg, _calc_corr_catg_num
-from v_python.src.auxiliar.verbose import _verbose
+import matplotlib.pyplot as plt
+import numpy as np
+import pandas as pd
+import seaborn as sns
+from scipy import stats
+
+from auxiliar.auxiliar_es import _es_dataset, _es_variable, _es_discreta, _es_continua
+from SME_python.metricas_de_variables import _calcular_AUC
+from SME_python.correlacion_info import _calc_corr_num, _calc_corr_catg, _calc_corr_catg_num
+from auxiliar.verbose import _verbose
 
 
-# ============================================================
-# TEMA GESTALT — paleta semántica y configuración global
-# ============================================================
+COLOR_DATO = "#2c6e91"         # azul 
+COLOR_ESTIMADO = "#e8734d"     # naranja  
+COLOR_REFERENCIA = "#9a9a9a"   # gris 
+COLOR_CLASE_2 = "#7a3b8c"      # morado  
 
-# 03 SEMEJANZA: paleta fija de tres colores, cada uno con un único
-# significado en todo el módulo. No cambian de un gráfico a otro.
-COLOR_DATO = "#2c6e91"         # azul acero -> "esto se midió"
-COLOR_ESTIMADO = "#e8734d"     # coral      -> "esto es una estimación"
-COLOR_REFERENCIA = "#9a9a9a"   # gris       -> "esto es una referencia teórica"
+COLOR_TEXTO = "#333333"
+COLOR_TEXTO_SUAVE = "#555555"
 
-# Paleta de mapa de calor para magnitudes continuas (frecuencias):
-# esto es una codificación de intensidad, no de categoría, así que
-# no entra en conflicto con la semántica de SEMEJANZA de arriba.
+# Paleta de mapa de calor para magnitudes continuas (frecuencias)
 PALETA = "viridis"
 
 FUENTE_TITULO = dict(
     fontsize=17,
     fontweight="bold",
 )
+
+
+
+def _bonito(texto, cap=True):
+    """
+    Convierte un nombre técnico en un texto legible:
+    'horas_de_estudio' -> 'Horas de estudio'.
+
+    Cambia los "_" (y espacios repetidos) por un único espacio.
+    Con ``cap=False`` no fuerza la mayúscula inicial (útil cuando
+    el nombre va dentro de una frase).
+    """
+    if texto is None:
+        return ""
+    s = re.sub(r"[_\s]+", " ", str(texto)).strip()
+    if cap and s:
+        s = s[0].upper() + s[1:]
+    return s
+
+
+def _nombre(serie, defecto):
+    """Nombre legible de una Series (o `defecto` si no tiene nombre)."""
+    nombre = getattr(serie, "name", None)
+    return _bonito(nombre, cap=False) if nombre is not None else defecto
+
 
 def _aplicar_tema_base():
     """
@@ -102,12 +69,14 @@ def _aplicar_tema_base():
             "axes.linewidth": 0.8,
             "grid.color": "#e8e8e8",
             "grid.linewidth": 0.6,
+            "axes.labelsize": 13,
+            "xtick.labelsize": 11,
+            "ytick.labelsize": 11,
         },
     )
 
 
 def _despejar_ejes(ax, grid_eje="y"):
-    """02 COMPLECIÓN: sin bordes superfluos, solo la rejilla útil para leer valores."""
     sns.despine(ax=ax, top=True, right=True)
     ax.grid(axis=grid_eje, alpha=0.4)
     ax.set_axisbelow(True)
@@ -115,23 +84,69 @@ def _despejar_ejes(ax, grid_eje="y"):
 
 
 def _titulo_pregunta(fig, pregunta):
-    """El título es siempre la pregunta a la que responde el gráfico."""
+    """
+    El título es siempre la pregunta a la que responde el gráfico.
+
+    Si es larga se parte en varias líneas para que no se salga de la
+    figura. Devuelve la fracción de altura (0-1) donde debe terminar
+    el contenido por arriba, para que nada se solape con el título.
+    """
+
+    ancho, alto = fig.get_size_inches()
+    lineas = textwrap.wrap(pregunta, width=max(30, int(ancho * 6))) or [pregunta]
     fig.suptitle(
-        pregunta,
+        "\n".join(lineas),
         fontsize=FUENTE_TITULO["fontsize"],
         fontweight=FUENTE_TITULO["fontweight"],
         y=0.98,
     )
+    alto_titulo_in = len(lineas) * FUENTE_TITULO["fontsize"] * 1.4 / 72
+    return 0.98 - (alto_titulo_in + 0.15) / alto
 
-# ============================================================
-# 1) AUC / Curva ROC
-# ============================================================
+
+def _resumen_respuesta(fig, tope, dato, veredicto, porque):
+    """
+    Escribe, justo debajo del título-pregunta, la respuesta en dos líneas:
+
+        <dato> -> SÍ / NO
+        Porque: <motivo>
+
+    Devuelve la nueva fracción de altura (0-1) donde debe terminar el
+    contenido por arriba, para que nada se solape con este texto.
+    """
+    ancho, alto = fig.get_size_inches()
+    marca = "no evaluable" if veredicto is None else ("SÍ" if bool(veredicto) else "NO")
+
+    fig.text(
+        0.5, tope, f"{dato}  →  {marca}",
+        ha="center", va="top", fontsize=13, fontweight="bold", color="#111111",
+    )
+
+    alto_l1 = 13 * 1.35 / 72 + 0.05
+    lineas = textwrap.wrap(f"Porque: {porque}", width=max(40, int(ancho * 9))) or [""]
+    fig.text(
+        0.5, tope - alto_l1 / alto, "\n".join(lineas),
+        ha="center", va="top", fontsize=11, color=COLOR_TEXTO_SUAVE, linespacing=1.25,
+    )
+    alto_l2 = len(lineas) * 11 * 1.3 / 72
+
+    return tope - (alto_l1 + alto_l2 + 0.20) / alto
+
+
+def _fmt_p(p):
+    """Formato legible para un valor p."""
+    if p is None or not np.isfinite(p):
+        return "n/d"
+    return "< 0.001" if p < 0.001 else f"= {p:.3f}"
+
+## AUC
 
 def graficar_auc(
     atributo_clm,
     clases,
     resultado=None,
     pregunta=None,
+    umbral_auc=0.70,
     verbose=1,
     path=".",
     nombre_carpeta="figures"
@@ -146,6 +161,9 @@ def graficar_auc(
 
         graficar_auc(atributo_clm, clases, resultado=info)
             -> reutiliza un AUC ya calculado (evita recalcularlo)
+
+    La clase "positiva" es la de mayor valor (p. ej. 1 frente a 0,
+    "Sí" frente a "No"), de modo que un score alto indica positivo.
 
     Parameters
     ----------
@@ -163,6 +181,10 @@ def graficar_auc(
     pregunta : str, opcional
         Pregunta que responde el gráfico. Si no se indica, se genera
         una automáticamente a partir del nombre del atributo.
+
+    umbral_auc : float
+        AUC mínimo para responder SÍ (por defecto 0.70, el límite
+        habitual de "discriminación aceptable").
 
     verbose : int
         Nivel de información mostrado durante la ejecución.
@@ -206,12 +228,10 @@ def graficar_auc(
             "Las clases deben contener exactamente dos clases."
         )
 
+    nombre_original = getattr(atributo_clm, "name", None)
     atributo_clm = pd.Series(atributo_clm).reset_index(drop=True)
+    atributo_clm.name = nombre_original
     clases = pd.Series(clases).reset_index(drop=True)
-
-    # --------------------------------
-    # Calcular o reutilizar el AUC
-    # --------------------------------
 
     if resultado is not None and "valor" in resultado:
         auc = resultado["valor"]
@@ -224,27 +244,27 @@ def graficar_auc(
         )
         auc = _calcular_AUC(atributo_clm, clases, verbose=0)
 
-    # --------------------------------
-    # Preparar los datos
-    # --------------------------------
 
     datos = pd.DataFrame({"clase": clases, "atributo": atributo_clm})
-    datos = datos.sort_values("atributo", ascending=False)
+    datos = datos.sort_values("atributo", ascending=False, kind="mergesort")
 
-    clase_1 = list(valores_clases)[0]
-    clase_2 = list(valores_clases)[1]
+    # Orden determinista: la clase "positiva" es la de mayor valor.
+    try:
+        ordenadas = sorted(valores_clases)
+    except TypeError:
+        ordenadas = sorted(valores_clases, key=str)
+    clase_neg, clase_pos = ordenadas[0], ordenadas[1]
 
-    positivos = int((datos["clase"] == clase_1).sum())
-    negativos = int((datos["clase"] == clase_2).sum())
+    positivos = int((datos["clase"] == clase_pos).sum())
+    negativos = int((datos["clase"] == clase_neg).sum())
 
     if positivos == 0 or negativos == 0:
         raise ValueError(
             "Cada clase debe tener al menos una observación."
         )
 
-    # --------------------------------
-    # Construir curva ROC
-    # --------------------------------
+
+    #La curva
 
     tpr = [0]
     fpr = [0]
@@ -252,7 +272,7 @@ def graficar_auc(
     fp = 0
 
     for clase in datos["clase"]:
-        if clase == clase_1:
+        if clase == clase_pos:
             vp += 1
         else:
             fp += 1
@@ -262,96 +282,119 @@ def graficar_auc(
     tpr.append(1)
     fpr.append(1)
 
-    # --------------------------------
-    # Tema y título-pregunta
-    # --------------------------------
+    # título
 
     _aplicar_tema_base()
 
-    nombre_attr = atributo_clm.name if atributo_clm.name is not None else "el atributo"
+    nombre_attr = _nombre(atributo_clm, "el atributo")
+    pos = _bonito(clase_pos, cap=False)
+    neg = _bonito(clase_neg, cap=False)
+
     if pregunta is None:
         pregunta = f"¿Qué tan bien distingue {nombre_attr} entre las dos clases?"
 
-    fig, ejes = plt.subplots(1, 2, figsize=(14, 6))
+    fig, ejes = plt.subplots(1, 2, figsize=(14, 7.4))
 
-    # --------------------------------
-    # Curva ROC
-    # --------------------------------
 
     ax = ejes[0]
 
-    # 03 SEMEJANZA: la curva ROC se calcula a partir de los datos
-    # reales -> COLOR_DATO. La diagonal es una referencia teórica
-    # (clasificador al azar) -> COLOR_REFERENCIA, igual que en el
-    # resto de gráficos del módulo.
+
     ax.plot(fpr, tpr, color=COLOR_DATO, lw=3)
     ax.fill_between(fpr, tpr, color=COLOR_DATO, alpha=0.15)
 
-    # 05 CONECTIVIDAD: esta línea diagonal SÍ es correcta porque
-    # conecta dos puntos que comparten una relación real (el
-    # comportamiento esperado de un clasificador sin capacidad
-    # discriminativa), no una categoría arbitraria.
-    ax.plot([0, 1], [0, 1], linestyle="--", color=COLOR_REFERENCIA, lw=1.5)
-    ax.text(0.62, 0.57, "azar", color=COLOR_REFERENCIA, fontsize=11,
-            rotation=33, style="italic")
 
-    # 01 PROXIMIDAD: el AUC se ancla sobre la propia curva en vez
-    # de vivir, lejos, dentro de una leyenda en una esquina.
-    idx_medio = len(fpr) // 2
-    ax.annotate(
-        f"AUC = {auc:.3f}",
-        xy=(fpr[idx_medio], tpr[idx_medio]),
-        xytext=(fpr[idx_medio] + 0.16, tpr[idx_medio] - 0.20),
+    ax.plot([0, 1], [0, 1], linestyle="--", color=COLOR_REFERENCIA, lw=1.5)
+
+    
+    ax.text(0.50, 0.47, "azar", color=COLOR_REFERENCIA,
+            fontsize=10.5, rotation=45, rotation_mode="anchor",
+            ha="center", va="top", style="italic")
+
+
+    ax.text(0.03, 0.97, "curva perfecta", color=COLOR_REFERENCIA,
+            fontsize=10.5, ha="left", va="top", style="italic")
+
+
+    ax.text(
+        0.96, 0.06, f"AUC = {auc:.3f}\n(área sombreada)",
+        transform=ax.transAxes, ha="right", va="bottom",
         color=COLOR_DATO, fontsize=13, fontweight="bold",
-        arrowprops=dict(arrowstyle="-", color=COLOR_DATO, lw=1),
     )
 
-    ax.set_xlabel("Tasa de falsos positivos")
-    ax.set_ylabel("Tasa de verdaderos positivos")
+    ax.set_xlabel(f"Falsos positivos\n(% de «{neg}» marcados como «{pos}»)")
+    ax.set_ylabel(f"Verdaderos positivos\n(% de «{pos}» detectados)")
     ax.set_title("Curva ROC", fontsize=13, color="#444444")
     ax.set_xlim(0, 1)
     ax.set_ylim(0, 1)
+    ax.set_box_aspect(1)
     _despejar_ejes(ax, grid_eje="both")
 
-    # --------------------------------
-    # Distribución del atributo
-    # --------------------------------
+
 
     ax2 = ejes[1]
 
-    # Dos clases = dos identidades categóricas (ambas son datos
-    # reales), no una relación dato/estimación: usan una paleta
-    # categórica propia, distinta de COLOR_DATO/COLOR_ESTIMADO,
-    # para no mezclar dos sistemas de significado distintos.
-    paleta_clases = [COLOR_DATO, "#7a3b8c"]
+    # Dos clases = dos identidades categóricas
+    paleta_clases = {clase_pos: COLOR_DATO, clase_neg: COLOR_CLASE_2}
+    orden_hue = [clase_neg, clase_pos]
 
     sns.kdeplot(
-        data=datos, x="atributo", hue="clase", fill=True,
-        common_norm=False, alpha=0.35, palette=paleta_clases,
+        data=datos, x="atributo", hue="clase", hue_order=orden_hue,
+        fill=True, common_norm=False, alpha=0.35, palette=paleta_clases,
         linewidth=1.8, ax=ax2, legend=False,
     )
     sns.rugplot(
-        data=datos, x="atributo", hue="clase",
+        data=datos, x="atributo", hue="clase", hue_order=orden_hue,
         palette=paleta_clases, ax=ax2, legend=False, alpha=0.5,
     )
 
-    # 01 PROXIMIDAD: la etiqueta de cada clase se ancla junto a su
-    # propia curva (sobre su mediana), no en una leyenda aparte.
-    y_max = ax2.get_ylim()[1]
-    for color, clase_valor in zip(paleta_clases, [clase_1, clase_2]):
-        mediana = datos.loc[datos["clase"] == clase_valor, "atributo"].median()
+    # Margen extra arriba
+    x_min, x_max = ax2.get_xlim()
+    rango_x = x_max - x_min
+    ax2.set_xlim(x_min - 0.08 * rango_x, x_max + 0.08 * rango_x)
+    ax2.set_ylim(0, ax2.get_ylim()[1] * 1.22)
+    y_texto = ax2.get_ylim()[1] * 0.97
+    separacion = 0.012 * (ax2.get_xlim()[1] - ax2.get_xlim()[0])
+
+    medianas = {
+        c: datos.loc[datos["clase"] == c, "atributo"].median()
+        for c in (clase_neg, clase_pos)
+    }
+    ordenadas_med = sorted(medianas, key=lambda c: medianas[c])
+    for posicion, clase_valor in enumerate(ordenadas_med):
+        mediana = medianas[clase_valor]
+        color = paleta_clases[clase_valor]
+        a_la_izquierda = posicion == 0
+        ax2.axvline(mediana, ymax=0.90, color=color, lw=1.2, linestyle=":")
         ax2.text(
-            mediana, y_max * 0.94, f"clase {clase_valor}",
-            color=color, fontsize=11, fontweight="bold", ha="center",
+            mediana + (-separacion if a_la_izquierda else separacion),
+            y_texto,
+            f"clase «{_bonito(clase_valor, cap=False)}»\nmediana {mediana:.2f}",
+            color=color, fontsize=11, fontweight="bold",
+            ha="right" if a_la_izquierda else "left", va="top",
         )
 
-    ax2.set_xlabel(nombre_attr)
+    ax2.set_xlabel(_bonito(nombre_attr))
     ax2.set_ylabel("Densidad (estimada)")
     ax2.set_title("Distribución por clase", fontsize=13, color="#444444")
+    ax2.set_box_aspect(1)
     _despejar_ejes(ax2, grid_eje="y")
 
-    _titulo_pregunta(fig, pregunta)
-    fig.tight_layout(rect=[0, 0, 1, 0.90])
+
+
+    cumple = auc >= umbral_auc
+    _verbose(
+        f"ROC · Cómo leerla: al marcar como «{pos}» las observaciones de mayor a menor "
+        f"{nombre_attr}, la curva sube con cada acierto y avanza con cada error. Cuanto más "
+        f"cerca de la esquina superior izquierda, mejor; la diagonal es el azar. "
+        f"Respondes SÍ si AUC ≥ {umbral_auc:.2f} (0.5 azar · 0.8 bueno · 0.9 excelente).",
+        verbose, nivel=1,
+    )
+    tope = _titulo_pregunta(fig, pregunta)
+    tope = _resumen_respuesta(    # Respuesta
+        fig, tope, f"AUC = {auc:.3f} (mín. {umbral_auc:.2f})", cumple,
+        f"la «{pos}» puntúa más alto que la «{neg}» en el {auc * 100:.0f}% de los pares.",
+    )
+    fig.tight_layout(rect=[0, 0, 1, tope])
     fig.savefig(
         carpeta_salida / "demo_auc.png",
         dpi=110,
@@ -360,15 +403,15 @@ def graficar_auc(
     return fig
 
 
-# ============================================================
-# 2) Correlación de Pearson
-# ============================================================
+# Pearson
 
 def graficar_pearson(
     atributo1,
     atributo2,
     resultado=None,
     pregunta=None,
+    umbral_r=0.5,
+    alfa=0.05,
     verbose=1,
     path=".",
     nombre_carpeta="figures"
@@ -402,6 +445,14 @@ def graficar_pearson(
         Pregunta que responde el gráfico. Si no se indica, se genera
         una automáticamente a partir de los nombres de las variables.
 
+    umbral_r : float
+        |r| mínimo para responder SÍ (por defecto 0.5: relación al
+        menos moderada).
+
+    alfa : float
+        Nivel de significación: además del tamaño de r, se exige
+        p < alfa para descartar que sea casualidad (por defecto 0.05).
+
     verbose : int
         Nivel de información mostrado durante la ejecución.
 
@@ -421,7 +472,6 @@ def graficar_pearson(
     carpeta_salida = Path(path) / nombre_carpeta
     carpeta_salida.mkdir(parents=True, exist_ok=True)
 
-
     if len(atributo1) != len(atributo2):
         raise ValueError(
             "Los atributos deben tener el mismo número de elementos."
@@ -437,7 +487,7 @@ def graficar_pearson(
         _verbose(
             "No se ha proporcionado el resultado de Pearson. "
             "Se calculará automáticamente.",
-            1,
+            verbose,
             nivel=2,
         )
         resultado = _calc_corr_num(atributo1, atributo2, verbose=0)
@@ -446,8 +496,8 @@ def graficar_pearson(
     y = np.asarray(resultado["y"])
     r = resultado["valor"]
     r2 = resultado["r2"]
-    nombre1 = resultado["nombre1"]
-    nombre2 = resultado["nombre2"]
+    nombre1 = _bonito(resultado["nombre1"], cap=False)
+    nombre2 = _bonito(resultado["nombre2"], cap=False)
 
     _aplicar_tema_base()
 
@@ -461,37 +511,82 @@ def graficar_pearson(
     y_linea = pendiente * x_ordenado + intercepto
     error_estandar = np.std(y - (pendiente * x + intercepto))
 
-    # 03 SEMEJANZA: los puntos son datos reales -> COLOR_DATO.
+    try:
+        p_valor = stats.pearsonr(x, y)[1]
+    except Exception:
+        p_valor = np.nan
+
     grafico = sns.jointplot(
         x=x, y=y, kind="scatter", height=8, color=COLOR_DATO,
         marginal_kws=dict(fill=True, color=COLOR_DATO),
     )
     ax = grafico.ax_joint
 
-    # 04 CIERRE: la recta es una ESTIMACIÓN, no un dato recabado,
-    # así que se encierra en una banda sombreada que delimita
-    # claramente "esto es un modelo ajustado, no una medición".
+
+    y_min, y_max = ax.get_ylim()
+    ax.set_ylim(y_min, y_max + 0.20 * (y_max - y_min))
+
+
     ax.fill_between(
         x_ordenado, y_linea - error_estandar, y_linea + error_estandar,
         color=COLOR_ESTIMADO, alpha=0.15, zorder=1,
     )
     ax.plot(x_ordenado, y_linea, color=COLOR_ESTIMADO, lw=2.5, zorder=2)
 
-    # 01 PROXIMIDAD: la ecuación y el coeficiente se anclan junto
-    # al extremo de la propia recta, no en un cuadro de leyenda
-    # alejado del dato.
-    ax.annotate(
-        f"y = {pendiente:.2f}x + {intercepto:.2f}\nr = {r:.3f}  (r² = {r2:.3f})",
-        xy=(x_ordenado[-1], y_linea[-1]),
-        xytext=(10, 0), textcoords="offset points",
-        color=COLOR_ESTIMADO, fontsize=11, fontweight="bold", va="center",
+    sube = pendiente >= 0
+    signo = "+" if intercepto >= 0 else "−"
+    ax.text(
+        0.03 if sube else 0.97, 0.97,
+        f"y = {pendiente:.2f}x {signo} {abs(intercepto):.2f}\n"
+        f"r = {r:.3f}   (r² = {r2:.3f})",
+        transform=ax.transAxes, ha="left" if sube else "right", va="top",
+        color=COLOR_ESTIMADO, fontsize=12, fontweight="bold",
+        bbox=dict(boxstyle="round,pad=0.4", fc="white", ec=COLOR_ESTIMADO,
+                  lw=0.9, alpha=0.95),
+        zorder=6,
     )
 
-    grafico.set_axis_labels(nombre1, nombre2)
+    grafico.set_axis_labels(_bonito(nombre1), _bonito(nombre2))
     _despejar_ejes(ax, grid_eje="both")
 
-    _titulo_pregunta(grafico.figure, pregunta)
-    grafico.figure.subplots_adjust(top=0.90)
+    # Respuesta corta bajo el título
+
+    fuerza_r = abs(r)
+    if fuerza_r < 0.3:
+        fuerza = "débil"
+    elif fuerza_r < 0.5:
+        fuerza = "moderada"
+    elif fuerza_r < 0.7:
+        fuerza = "fuerte"
+    else:
+        fuerza = "muy fuerte"
+    sentido = "positiva" if r >= 0 else "negativa"
+
+    p_ok = (p_valor < alfa) if np.isfinite(p_valor) else True
+    cumple = (abs(r) >= umbral_r) and p_ok
+
+    _verbose(
+        f"Pearson · Cómo leerlo: cada punto es una observación; la recta es el ajuste lineal "
+        f"y la banda, ±1 desviación del error. Respondes SÍ si |r| ≥ {umbral_r:.1f} y "
+        f"p < {alfa} (|r|: 0.3 débil · 0.5 moderada · 0.7 fuerte).",
+        verbose, nivel=1,
+    )
+
+    if cumple:
+        porque = (f"relación {fuerza} y {sentido}; la recta explica el "
+                  f"{r2 * 100:.0f}% de la variación de {nombre2}.")
+    elif abs(r) >= umbral_r:
+        porque = (f"r es alto, pero p {_fmt_p(p_valor)} (máx. {alfa}): "
+                  f"podría ser casualidad.")
+    else:
+        porque = (f"relación {fuerza} ({sentido}); la recta explica solo el "
+                  f"{r2 * 100:.0f}% de la variación de {nombre2}.")
+
+    tope = _titulo_pregunta(grafico.figure, pregunta)
+    tope = _resumen_respuesta(
+        grafico.figure, tope, f"r = {r:.3f} (mín. {umbral_r:.1f})", cumple, porque,
+    )
+    grafico.figure.subplots_adjust(top=tope, bottom=0.08)
 
     grafico.figure.savefig(
         carpeta_salida / "pearson.png",
@@ -503,15 +598,47 @@ def graficar_pearson(
     return grafico.figure
 
 
-# ============================================================
-# 3) Información mutua entre dos categóricas
-# ============================================================
+# Información mutua
+
+def _info_mutua_desde_tabla(tabla, alfa=0.05):
+    """
+    Calcula, a partir de la tabla de contingencia:
+      - la información mutua en bits,
+      - el % de incertidumbre de la 2ª variable que reduce conocer la 1ª,
+      - el valor p de la prueba G (contrasta si la información mutua
+        es mayor de lo que daría el azar entre variables independientes),
+      - si alguna celda tiene menos de 5 casos esperados (prueba poco fiable).
+    """
+    t = np.asarray(tabla, dtype=float)
+    n = t.sum()
+    p_xy = t / n
+    p_x = p_xy.sum(axis=1, keepdims=True)
+    p_y = p_xy.sum(axis=0, keepdims=True)
+
+    with np.errstate(divide="ignore", invalid="ignore"):
+        termino = np.where(p_xy > 0, p_xy * np.log2(p_xy / (p_x * p_y)), 0.0)
+    mi = float(termino.sum())
+
+    with np.errstate(divide="ignore", invalid="ignore"):
+        h_y = float(-np.nansum(np.where(p_y > 0, p_y * np.log2(p_y), 0.0)))
+    reduccion = mi / h_y if h_y > 0 else 0.0
+
+    gl = (t.shape[0] - 1) * (t.shape[1] - 1)
+    g = 2 * n * np.log(2) * mi           # estadístico G (razón de verosimilitud)
+    p_valor = float(stats.chi2.sf(g, gl)) if gl > 0 else 1.0
+
+    esperadas = p_x * p_y * n
+    pocas_muestras = bool((esperadas < 5).any())
+
+    return mi, reduccion, g, gl, p_valor, pocas_muestras
+
 
 def graficar_informacion_mutua(
     atributo1,
     atributo2,
     resultado=None,
     pregunta=None,
+    alfa=0.05,
     verbose=1,
     path=".",
     nombre_carpeta="figures"
@@ -543,6 +670,10 @@ def graficar_informacion_mutua(
     pregunta : str, opcional
         Pregunta que responde el gráfico. Si no se indica, se genera
         una automáticamente a partir de los nombres de las variables.
+
+    alfa : float
+        Nivel de significación de la prueba G (por defecto 0.05).
+        Se responde SÍ si p < alfa.
 
     verbose : int
         Nivel de información mostrado durante la ejecución.
@@ -578,33 +709,32 @@ def graficar_informacion_mutua(
         _verbose(
             "No se ha proporcionado el resultado de información mutua. "
             "Se calculará automáticamente.",
-            1,
+            verbose,
             nivel=2,
         )
         resultado = _calc_corr_catg(atributo1, atributo2, verbose=0)
 
     tabla = resultado["tabla"]
     mi = resultado["valor"]
-    nombre1 = resultado["nombre1"]
-    nombre2 = resultado["nombre2"]
+    nombre1 = _bonito(resultado["nombre1"], cap=False)
+    nombre2 = _bonito(resultado["nombre2"], cap=False)
 
     _aplicar_tema_base()
 
     if pregunta is None:
         pregunta = f"¿Están relacionadas las categorías de {nombre1} y {nombre2}?"
 
-    # 06 CONTINUIDAD: sin una secuencia real que respetar (no hay
-    # un orden natural entre categorías), se ordenan filas y
-    # columnas de mayor a menor frecuencia total. Así la mirada
-    # recorre la tabla en una trayectoria descendente y fluida, en
-    # vez de un orden alfabético arbitrario.
     orden_filas = tabla.sum(axis=1).sort_values(ascending=False).index
     orden_columnas = tabla.sum(axis=0).sort_values(ascending=False).index
-    tabla = tabla.loc[orden_filas, orden_columnas]
+    tabla = tabla.loc[orden_filas, orden_columnas].copy()
+
+    # Nombres de categorías legibles (sin "_").
+    tabla.index = [_bonito(v) for v in tabla.index]
+    tabla.columns = [_bonito(v) for v in tabla.columns]
 
     tabla_pct = tabla / tabla.values.sum() * 100
 
-    fig, ejes = plt.subplots(1, 2, figsize=(14, 6))
+    fig, ejes = plt.subplots(1, 2, figsize=(14, 6.6))
 
     sns.heatmap(
         tabla, annot=True, fmt="d", cmap=PALETA,
@@ -612,8 +742,8 @@ def graficar_informacion_mutua(
         linewidths=0.5, linecolor="white",
     )
     ejes[0].set_title("Frecuencias absolutas", fontsize=13, color="#444444")
-    ejes[0].set_xlabel(nombre2)
-    ejes[0].set_ylabel(nombre1)
+    ejes[0].set_xlabel(_bonito(nombre2))
+    ejes[0].set_ylabel(_bonito(nombre1))
 
     sns.heatmap(
         tabla_pct, annot=True, fmt=".1f", cmap=PALETA,
@@ -621,21 +751,44 @@ def graficar_informacion_mutua(
         linewidths=0.5, linecolor="white",
     )
     ejes[1].set_title("Frecuencias relativas (%)", fontsize=13, color="#444444")
-    ejes[1].set_xlabel(nombre2)
+    ejes[1].set_xlabel(_bonito(nombre2))
     ejes[1].set_ylabel("")
 
     for ax in ejes:
         ax.tick_params(length=0)
+        ax.tick_params(axis="y", labelrotation=0)
 
-    # 01 PROXIMIDAD: la información mutua se coloca pegada a las
-    # dos tablas que la sustentan, no en un cuadro de texto suelto.
-    fig.text(
-        0.5, 0.88, f"Información mutua = {mi:.4f} bits",
-        ha="center", fontsize=13, color=COLOR_ESTIMADO, fontweight="bold",
+
+    mi_t, reduccion, g, gl, p_valor, pocas = _info_mutua_desde_tabla(tabla.values)  # Estadística para el criterio
+    cumple = p_valor < alfa
+
+    _verbose(
+        "Información mutua · Cómo leerla: cada celda cuenta las observaciones de esa "
+        "combinación; si las filas se reparten de forma muy distinta, las variables están "
+        f"relacionadas. Respondes SÍ si la prueba G da p < {alfa} (MI mayor que la del azar; "
+        "en bits no hay un umbral universal).",
+        verbose, nivel=1,
     )
+    if pocas:
+        _verbose(
+            "Aviso: hay celdas con menos de 5 casos esperados; la prueba G es orientativa.",
+            verbose, nivel=1,
+        )
 
-    _titulo_pregunta(fig, pregunta)
-    fig.tight_layout(rect=[0, 0, 1, 0.84])
+    if cumple:
+        porque = (f"conocer «{nombre1}» reduce un {reduccion * 100:.1f}% la incertidumbre "
+                  f"sobre «{nombre2}» y no se explica por azar.")
+    else:
+        porque = (f"conocer «{nombre1}» solo reduce un {reduccion * 100:.1f}% la incertidumbre "
+                  f"sobre «{nombre2}», y eso es compatible con el azar.")
+
+    tope = _titulo_pregunta(fig, pregunta)
+    tope = _resumen_respuesta(
+        fig, tope,
+        f"Información mutua = {mi:.4f} bits, p {_fmt_p(p_valor)} (máx. {alfa})",
+        cumple, porque,
+    )
+    fig.tight_layout(rect=[0, 0, 1, tope])
     fig.savefig(
         carpeta_salida / "MI.png",
         dpi=110,
@@ -644,9 +797,39 @@ def graficar_informacion_mutua(
     return fig
 
 
-# ============================================================
-# 4) Welch ANOVA
-# ============================================================
+    # Welch ANOVA
+
+
+def _welch_anova(valores_grupos):
+    """
+    Welch ANOVA a partir de los valores de cada grupo.
+
+    Devuelve (F, gl1, gl2, p) o None si no es calculable (algún grupo
+    con menos de 2 observaciones o sin variabilidad).
+    """
+    muestras = [np.asarray(v, dtype=float) for v in valores_grupos]
+    k = len(muestras)
+    if k < 2:
+        return None
+
+    n = np.array([len(m) for m in muestras], dtype=float)
+    medias = np.array([m.mean() for m in muestras])
+    varianzas = np.array([m.var(ddof=1) if len(m) > 1 else np.nan for m in muestras])
+
+    if (n < 2).any() or not np.all(np.isfinite(varianzas)) or (varianzas <= 0).any():
+        return None
+
+    w = n / varianzas
+    w_total = w.sum()
+    media_w = (w * medias).sum() / w_total
+    numerador = (w * (medias - media_w) ** 2).sum() / (k - 1)
+    tmp = ((1 - w / w_total) ** 2 / (n - 1)).sum()
+    denominador = 1 + 2 * (k - 2) / (k ** 2 - 1) * tmp
+    f = numerador / denominador
+    gl1 = k - 1
+    gl2 = (k ** 2 - 1) / (3 * tmp)
+    return float(f), gl1, float(gl2), float(stats.f.sf(f, gl1, gl2))
+
 
 def graficar_welch(
     atributo1,
@@ -654,6 +837,7 @@ def graficar_welch(
     resultado=None,
     pregunta=None,
     orden_categorias=None,
+    alfa=0.05,
     verbose=1,
     path=".",
     nombre_carpeta="figures"
@@ -697,6 +881,10 @@ def graficar_welch(
         ninguna relación de orden real que la línea pueda afirmar sin
         engañar.
 
+    alfa : float
+        Nivel de significación (por defecto 0.05). Se responde SÍ si
+        p < alfa.
+
     verbose : int
         Nivel de información mostrado durante la ejecución.
 
@@ -731,7 +919,7 @@ def graficar_welch(
         _verbose(
             "No se ha proporcionado el resultado de Welch ANOVA. "
             "Se calculará automáticamente.",
-            1,
+            verbose,
             nivel=2,
         )
         resultado = _calc_corr_catg_num(atributo1, atributo2, verbose=0)
@@ -742,8 +930,8 @@ def graficar_welch(
     n_grupos = resultado["n_grupos"]
     media_general = resultado["media_general"]
     f_welch = resultado["valor"]
-    nombre_categorico = resultado["nombre_categorico"]
-    nombre_numerico = resultado["nombre_numerico"]
+    nombre_categorico = _bonito(resultado["nombre_categorico"], cap=False)
+    nombre_numerico = _bonito(resultado["nombre_numerico"], cap=False)
 
     _aplicar_tema_base()
 
@@ -757,18 +945,18 @@ def graficar_welch(
     else:
         grupos_ordenados = sorted(grupos, key=lambda g: medias[g], reverse=True)
 
-    etiquetas = [str(g) for g in grupos_ordenados]
+    etiquetas = [_bonito(g) for g in grupos_ordenados]
 
     datos = pd.concat([
-        pd.DataFrame({"grupo": str(g), "valor": valores_grupos[g]})
+        pd.DataFrame({"grupo": _bonito(g), "valor": valores_grupos[g]})
         for g in grupos_ordenados
     ], ignore_index=True)
     datos["grupo"] = pd.Categorical(datos["grupo"], categories=etiquetas, ordered=True)
 
-    fig, ax = plt.subplots(figsize=(11, 7))
+    n_g = len(grupos_ordenados)
+    fig, ax = plt.subplots(figsize=(max(11, 2.6 * n_g + 4), 7.4))
 
-    # 03 SEMEJANZA: los puntos y las cajas son datos reales
-    # recabados -> COLOR_DATO en todo momento.
+
     sns.boxplot(
         data=datos, x="grupo", y="valor", color=COLOR_DATO,
         showfliers=False, width=0.5, ax=ax, boxprops=dict(alpha=0.30),
@@ -778,136 +966,91 @@ def graficar_welch(
         alpha=0.45, size=4.5, jitter=0.2, ax=ax,
     )
 
-    xs_medias = [medias[g] for g in grupos_ordenados]
+    ys_medias = [medias[g] for g in grupos_ordenados]
 
     if es_secuencia_real:
-        # 05 CONECTIVIDAD: aquí SÍ se conecta, porque los grupos
-        # comparten una secuencia real y la línea afirma
-        # correctamente esa relación de orden.
+
         ax.plot(
-            range(len(grupos_ordenados)), xs_medias,
+            range(n_g), ys_medias,
             color=COLOR_ESTIMADO, lw=1.8, zorder=4, alpha=0.85,
         )
     # Si no hay secuencia real, NO se dibuja línea entre las
     # medias: conectarlas afirmaría un orden que no existe.
 
+    y_min, y_max = ax.get_ylim()
+    ax.set_ylim(y_min, y_max + 0.24 * (y_max - y_min))
+
     for i, g in enumerate(grupos_ordenados):
-        # 03 SEMEJANZA: la media de grupo es un valor ESTIMADO
-        # (resumen), no un dato individual -> COLOR_ESTIMADO.
+
         ax.scatter(
             i, medias[g], marker="D", s=120,
             color=COLOR_ESTIMADO, edgecolor="white", linewidth=1, zorder=5,
         )
-        # 01 PROXIMIDAD + 04 CIERRE: n y la media se anclan junto
-        # al marcador y se encierran en una cajita, separándolos
-        # visualmente de los puntos de dato individuales.
-        ax.annotate(
-            f"n={n_grupos[g]}\nμ={medias[g]:.2f}",
-            (i, medias[g]), textcoords="offset points", xytext=(16, 0),
-            fontsize=9.5, color=COLOR_ESTIMADO,
+
+        ax.text(
+            i, 0.985, f"n = {n_grupos[g]}\nμ = {medias[g]:.2f}",
+            transform=ax.get_xaxis_transform(), ha="center", va="top",
+            fontsize=10.5, color=COLOR_ESTIMADO, fontweight="bold",
             bbox=dict(boxstyle="round,pad=0.3", fc="white",
-                      ec=COLOR_ESTIMADO, lw=0.8, alpha=0.9),
+                      ec=COLOR_ESTIMADO, lw=0.8, alpha=0.95),
         )
 
-    # 03 SEMEJANZA: la media general es una referencia teórica
-    # neutra -> COLOR_REFERENCIA, igual código que la diagonal de
-    # azar en la curva ROC.
+
     ax.axhline(media_general, linestyle="--", color=COLOR_REFERENCIA, lw=1.5)
+
     ax.text(
-        len(grupos_ordenados) - 0.55, media_general,
-        f" media general = {media_general:.2f}",
-        color=COLOR_REFERENCIA, fontsize=10, va="bottom",
+        1.01, media_general, f"media general\n= {media_general:.2f}",
+        transform=ax.get_yaxis_transform(), color=COLOR_REFERENCIA,
+        fontsize=10.5, va="center", ha="left",
     )
 
-    ax.set_xlabel(nombre_categorico)
-    ax.set_ylabel(nombre_numerico)
+    # Estadística para el criterio
+    welch = _welch_anova([valores_grupos[g] for g in grupos_ordenados])
+    if welch is not None:
+        f_welch, gl1, gl2, p_valor = welch
+        cumple = p_valor < alfa
+    else:
+        gl1 = gl2 = p_valor = None
+        cumple = None
+
+    ax.set_xlabel(_bonito(nombre_categorico))
+    ax.set_ylabel(_bonito(nombre_numerico))
     ax.set_title(
-        f"Welch ANOVA · F = {f_welch:.3f} ({len(grupos_ordenados)} grupos)",
+        f"Welch ANOVA · F = {f_welch:.3f} ({n_g} grupos)",
         fontsize=13, color="#444444",
     )
     _despejar_ejes(ax, grid_eje="y")
 
-    _titulo_pregunta(fig, pregunta)
-    fig.tight_layout(rect=[0, 0, 1, 0.90])
+
+    g_max = max(grupos_ordenados, key=lambda g: medias[g])
+    g_min = min(grupos_ordenados, key=lambda g: medias[g])
+
+    _verbose(
+        "Welch ANOVA · Cómo leerlo: caja = 50% central del grupo, puntos = observaciones, "
+        "rombo = media del grupo, línea gris = media general. "
+        f"Respondes SÍ si p < {alfa} (diferencias tan grandes serían raras si los grupos "
+        "fueran iguales).",
+        verbose, nivel=1,
+    )
+
+    rango_medias = (f"las medias van de {medias[g_min]:.2f} («{_bonito(g_min, cap=False)}») "
+                    f"a {medias[g_max]:.2f} («{_bonito(g_max, cap=False)}»)")
+    if cumple is True:
+        porque = f"{rango_medias} y esa diferencia no parece casualidad."
+        dato = f"F = {f_welch:.2f}, p {_fmt_p(p_valor)} (máx. {alfa})"
+    elif cumple is False:
+        porque = f"{rango_medias}, pero esa diferencia es compatible con el azar."
+        dato = f"F = {f_welch:.2f}, p {_fmt_p(p_valor)} (máx. {alfa})"
+    else:
+        porque = "algún grupo tiene menos de 2 datos o no varía."
+        dato = f"F = {f_welch:.2f}"
+
+    tope = _titulo_pregunta(fig, pregunta)
+    tope = _resumen_respuesta(fig, tope, dato, cumple, porque)
+    fig.tight_layout(rect=[0, 0, 1, tope])
     fig.savefig(
         carpeta_salida / "welch.png",
         dpi=110,
         bbox_inches="tight",
     )
     return fig
-
-
-# ============================================================
-# Demostración
-# ============================================================
-
-def main():
-    """
-    Demostración de los cuatro tipos de gráfico del módulo.
-
-    Genera un ejemplo para cada técnica (AUC/ROC, Pearson,
-    información mutua y Welch ANOVA) con datos sintéticos, y guarda
-    las figuras en la carpeta ``figures``.
-
-    No se conecta a ningún dataset real: sirve como referencia visual
-    de cómo se comporta cada gráfico y de cómo aplicar el tema Gestalt.
-    """
-
-    # Nota: se corrige el orden de los argumentos respecto al
-    # ejemplo original (atributo numérico primero, clases después).
-    clases = pd.Series([0, 0, 0, 0, 0, 1, 1, 1, 1, 1], name="Compra")
-    probabilidades = pd.Series(
-        [0.10, 0.35, 0.40, 0.60, 0.70, 0.30, 0.50, 0.65, 0.80, 0.90],
-        name="Score del modelo",
-    )
-    graficar_auc(probabilidades, clases)
-    plt.close("all")
-
-    x = pd.Series([1, 2, 3, 4, 5, 6, 7, 8, 9, 10], name="Horas de estudio")
-    y = pd.Series([2, 5, 4, 8, 7, 11, 10, 15, 13, 17], name="Nota")
-    graficar_pearson(x, y)
-    plt.close("all")
-
-    sexo = pd.Series(
-        ["Hombre", "Mujer", "Mujer", "Hombre", "Mujer",
-         "Hombre", "Mujer", "Mujer", "Hombre", "Hombre"],
-        name="Sexo",
-    )
-    compra = pd.Series(
-        ["Sí", "No", "Sí", "Sí", "No",
-         "Sí", "No", "Sí", "Sí", "No"],
-        name="Compra",
-    )
-    graficar_informacion_mutua(sexo, compra)
-    plt.close("all")
-
-    # Ejemplo SIN secuencia real: los grupos se ordenan por media,
-    # sin conectarlos con línea.
-    grupos = pd.Series(
-        ["A", "A", "A", "A", "B", "B", "B", "B", "C", "C", "C", "C"],
-        name="Grupo",
-    )
-    valores = pd.Series(
-        [10, 12, 11, 13, 18, 17, 20, 19, 14, 15, 13, 16],
-        name="Puntuación",
-    )
-    graficar_welch(grupos, valores)
-    plt.close("all")
-
-    # Ejemplo CON secuencia real (años): aquí sí tiene sentido
-    # conectar las medias con una línea.
-    anios = pd.Series(
-        ["2021", "2021", "2021", "2022", "2022", "2022",
-         "2023", "2023", "2023", "2024", "2024", "2024"],
-        name="Año",
-    )
-    ventas = pd.Series(
-        [10, 12, 11, 14, 15, 13, 19, 18, 20, 22, 24, 23],
-        name="Ventas (miles €)",
-    )
-    graficar_welch(anios, ventas, orden_categorias=["2021", "2022", "2023", "2024"])
-    plt.close("all")
-
-
-if __name__ == "__main__":
-    main()

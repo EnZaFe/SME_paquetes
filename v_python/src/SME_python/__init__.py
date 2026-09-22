@@ -37,6 +37,8 @@ from .visualizacion import (
     graficar_welch,
 )
 
+# AUXILIAR
+from auxiliar.load_dataset import load_dataset
 
 __all__ = [
     "__version__",
@@ -50,4 +52,5 @@ __all__ = [
     "graficar_pearson",
     "graficar_informacion_mutua",
     "graficar_welch",
+    "load_dataset"
 ]

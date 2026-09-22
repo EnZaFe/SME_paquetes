@@ -5,7 +5,7 @@ Version: 0.1.0
 Authors@R: 
     person(
         "EnZaFe",
-        role = c("aut", "cre")
+        role = c("aut")
     )
 Description: 
     Statistical and machine learning utilities for data analysis,
