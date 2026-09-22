@@ -138,7 +138,7 @@ discretizar_variable <- function(columna_variable, metodo,
 #' @param columna_variable Variable numérica a discretizar.
 #' @param n_intervalos Número de intervalos deseados. Si es NULL, se calcula como el 50% del número de casos (mínimo 1).
 #' @param verbose Nivel de verbosidad.
-#' @return Una lista con los pares de límites de intervalo [limite_inferior, limite_superior].
+#' @return Un vector con los pares de límites de intervalo [limite_inferior, limite_superior].
 discretizar_anchura <- function(columna_variable, n_intervalos, verbose = 1) {
     if (is.null(n_intervalos)) {
         n_intervalos <- round(length(columna_variable) * 0.50)
@@ -184,12 +184,12 @@ discretizar_anchura <- function(columna_variable, n_intervalos, verbose = 1) {
     intervalos_mostrados <- round(intervalos, 2) # Para que no salga numérico con decimales extraños
     .verbose(paste0("Límites de los intervalos: ", paste(intervalos_mostrados, collapse = ", ")), verbose, nivel = 2)
 
-    resultado <- list()
+    resultado <- c()
 
     for (valor in columna_variable) {
         for (i in seq_len(n_intervalos)) {
             if (valor <= intervalos[i + 1]) { # Si el valor real es menor que el límite superior del intervalo
-                resultado[[length(resultado) + 1]] <- list(round(intervalos[i], 2), round(intervalos[i + 1], 2))
+                resultado[[length(resultado) + 1]] <- c(round(intervalos[i], 2), round(intervalos[i + 1], 2))
                 break
             }
         }
@@ -204,7 +204,7 @@ discretizar_anchura <- function(columna_variable, n_intervalos, verbose = 1) {
 #' @param n_intervalos Número de intervalos deseados. Es exclusivo con "frecuencia".
 #' @param frecuencia Número de casos por intervalo. Es exclusivo con "n_intervalos".
 #' @param verbose Nivel de verbosidad.
-#' @return Una lista con los pares de límites de intervalo [limite_inferior, limite_superior].
+#' @return Un vector con los pares de límites de intervalo [limite_inferior, limite_superior].
 discretizar_frecuencia <- function(columna_variable, n_intervalos, frecuencia, verbose = 1) {
 
     # Algoritmo de discretización por igual frecuencia.
@@ -278,7 +278,7 @@ discretizar_frecuencia <- function(columna_variable, n_intervalos, frecuencia, v
         posicion <- posicion + frecuencia + meter_sobrante
     }
 
-    resultado <- list()
+    resultado <- c()
 
     for (valor in columna_variable) { # Muy marronero ponerlo por separado?
 
@@ -286,7 +286,7 @@ discretizar_frecuencia <- function(columna_variable, n_intervalos, frecuencia, v
 
             if (valor %in% grupos[[i]]) {
 
-                resultado[[length(resultado) + 1]] <- list(round(intervalos[[i]][[1]], 2), round(intervalos[[i]][[2]], 2))
+                resultado[[length(resultado) + 1]] <- c(round(intervalos[[i]][[1]], 2), round(intervalos[[i]][[2]], 2))
 
                 break
             }

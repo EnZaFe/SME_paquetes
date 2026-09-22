@@ -19,11 +19,11 @@
 .es_continua <- function(columna) {
     # Devuelve TRUE si una columna contiene valores numéricos.
 
-    # Si ya sabemos que es numérica.
-    if (inherits(columna, "numeric")) {
+    # Si ya es numérica, incluyendo integer y double.
+    if (is.numeric(columna)) {
         return(TRUE)
     }
-
+    
     # Si es carácter, intentamos convertir sus valores a números.
     if (inherits(columna, "character")) {
 
