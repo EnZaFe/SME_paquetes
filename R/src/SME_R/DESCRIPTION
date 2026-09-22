@@ -5,7 +5,8 @@ Version: 0.1.0
 Authors@R: 
     person(
         "EnZaFe",
-        role = c("aut")
+        role = c("aut", "cre"),
+        email = "ezabaleta010@ikasle.ehu.eus"
     )
 Description: 
     Statistical and machine learning utilities for data analysis,
