@@ -8,7 +8,7 @@ discretización = transformar una variable continua/numérica en categorías o i
 
 '''
 from auxiliar.verbose import _verbose
-from auxiliar.auxiliar_es import _es_dataset, _es_variable, _es_continua
+from auxiliar.auxiliar_es import _es_dataset, _es_continua
 import pandas as pd
 
 def discretizar(datos, metodo="anchura", n_intervalos=None,
@@ -39,7 +39,7 @@ def discretizar(datos, metodo="anchura", n_intervalos=None,
 
     
     # Si es una variable NUMERICA
-    if _es_variable(datos):#if true
+    if _es_continua(datos):#if true
         return _discretizar_variable(
             datos, metodo, n_intervalos, frecuencia, verbose
         )
@@ -84,6 +84,7 @@ def _discretizar_dataset(dataset, metodo,
     df = dataset.copy()
     for col in df.select_dtypes(include="number").columns:
         df[col] = _discretizar_variable(df[col], metodo, n_intervalos, frecuencia, verbose)
+
     return df #FINISH
 
 def _discretizar_variable(columna_variable, metodo,
@@ -169,7 +170,12 @@ def _discretizar_anchura(columna_variable, n_intervalos, verbose=1):
                     round(float(intervalos[i + 1]), 2) # Por comodidad round y float
                 ))
                 break
-
+    _verbose(
+        "Discretización finalizada correctamente.",
+        verbose,
+        nivel=1,
+        tipo="success"
+    )
     return resultado
 
 def _discretizar_frecuencia(columna_variable, n_intervalos, frecuencia, verbose=1):
@@ -284,5 +290,10 @@ def _discretizar_frecuencia(columna_variable, n_intervalos, frecuencia, verbose=
                 ))
 
                 break
-
+    _verbose(
+        "Discretización finalizada correctamente.",
+        verbose,
+        nivel=1,
+        tipo="success"
+    )
     return resultado

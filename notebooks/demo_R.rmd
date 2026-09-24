@@ -1,32 +1,452 @@
 ---
-title: "demo_R"
-output: pdf_document
-date: "2026-09-14"
+title: "SME_R — Ejemplo de uso"
+output:
+  html_document:
+    toc: true
+    toc_depth: 3
+    number_sections: false
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
-options(repos = c(CRAN = "https://cloud.r-project.org"))
+knitr::opts_chunk$set(echo = TRUE, warning = TRUE, message = TRUE)
 ```
-```{r}
-install.packages("devtools")   
+
+Este documento muestra cómo utilizar **SME_R**, una librería orientada al preprocesamiento y análisis de datasets.
+
+A lo largo del documento utilizaremos un dataset real de vehículos para mostrar, de forma progresiva, las principales funcionalidades del paquete.
+
+## Contenido
+
+1.  Instalación e importación del paquete
+2.  Carga y exploración del dataset
+3.  Discretización de variables
+4.  Cálculo de métricas
+5.  Normalización y estandarización
+6.  Filtrado de variables
+7.  Correlación e información mutua
+8.  Visualización de resultados
+
+## Durante la creación del paquete
+
+Se ha intentado mantener un estilo de API publica (ej. `discretizar()`) que llama a funciones internas (`.discretizar_frecuencia`) que el usuario no puede ver, haciendo un 'router' interno según el caso.
+
+También se ha hecho hincapié en un sistema de impresión de información a distintos niveles (`verbose`) y se ha intentado gestionar todos los errores, warnings... mediante el uso de `verbose` y `raise_error`.
+
+## 1. Instalación e importación
+
+En primer lugar cargamos la librería.
+
+```{r instalacion, echo=FALSE}
+library(devtools)
+
+devtools::load_all("C:/Users/Burbu/Desktop/SME_Python/R/src/SME_R") # Durante la creacion y debuugging
 ```
 
 ```{r}
+#devtools::document("../R/src/SME_R") #Para documentacion automatica
+detach("package:SMER", unload = TRUE)
 devtools::install_github(
   "EnZaFe/SME_paquetes",
-  subdir = "R/src/SME_R"
+  subdir = "R/src/SME_R",
+  force = TRUE
 )
 ```
 
 ```{r}
-devtools::install("C:/Users/Burbu/Desktop/SME_Python/R")
+library(SMER)
+```
+
+### Comprobación de la instalación
+
+Comprobamos que el paquete se puede cargar correctamente y mostramos la versión instalada.
+
+```{r comprobacion}
+packageVersion("SMER")
+
+#setwd("C:/Users/Burbu/Desktop/SME_Python/R/src/SME_R")
+#roxygen2::roxygenise(clean = TRUE)
+
+```
+
+## 2. Dataset
+
+Para probar las funcionalidades de la librería utilizaremos el **Vehicle Dataset from CarDekho** además de ciertos datasets clásicos (iris, wine, breast_cancer).
+
+El dataset contiene información sobre vehículos de segunda mano e incluye tanto variables numéricas como categóricas.
+
+Entre las variables disponibles encontramos:
+
+- `Year`: año del vehículo.
+- `Selling_Price`: precio de venta.
+- `Present_Price`: precio actual estimado.
+- `Kms_Driven`: kilómetros recorridos.
+- `Fuel_Type`: tipo de combustible.
+- `Seller_Type`: tipo de vendedor.
+- `Transmission`: tipo de transmisión.
+- `Owner`: número de propietarios anteriores.
+
+### Carga del dataset
+
+Si el dataset no está disponible como `car_data.csv`.
+
+```{r}
+download.file(
+  "https://www.kaggle.com/api/v1/datasets/download/nehalbirla/vehicle-dataset-from-cardekho",
+  destfile = "vehicle-dataset.zip",
+  mode = "wb"
+)
+unzip("vehicle-dataset.zip")
+list.files()
+df <- read.csv("car data.csv")
+```
+
+En caso de que ya tengamos un dataset descargado o queramos hacer pruebas, podemos utilizar la función `load_dataset`, con la que podemos convertir automáticamente a `data.frame` cualquier archivo de excel o texto. Además, nos permite cargar directamente 3 datasets clásicos: iris, wine y breast_cancer.
+
+```{r load_dataset}
+df <- cargar_dataset("car data.csv")
+class(df)
+
+df_iris <- cargar_dataset("iris")
+class(df_iris)
+```
+
+### Exploración inicial
+
+Antes de aplicar las funciones de `SME_R`, comprobamos las dimensiones del dataset, sus columnas y los tipos de datos.
+
+```{r shape}
+dim(df)
+```
+
+```{r info}
+str(df)
+```
+
+## 3. Discretización de variables
+
+La discretización permite transformar variables numéricas continuas en intervalos.
+
+`SME_R` proporciona dos métodos:
+
+- **Anchura (`anchura`)**: divide el rango de valores en intervalos de igual amplitud.
+- **Frecuencia (`frecuencia`)**: construye intervalos intentando mantener una cantidad similar de observaciones en cada uno.
+
+La función también permite seleccionar qué columnas discretizar y controlar el número de intervalos o la frecuencia deseada.
+
+### 3.1. Discretización automática
+
+Si no especificamos las columnas, la función identifica las variables numéricas susceptibles de ser discretizadas.
+
+Si tampoco indicamos el número de intervalos, la función utiliza su criterio predeterminado para determinarlo.
+
+```{r discret_auto}
+df_discret <- discretizar(df)
+
+head(df_discret)
+```
+
+Como no podemos ver los numeros directamente vamos a utilizar una función extra para ver como han quedado los intervalos discretizados.
+
+```{r}
+tabla_con_vectores_visual <- function(df) {
+  
+  # Detectar columnas que contienen vectores/listas
+  cols_problematicas <- names(df)[sapply(df, function(x) {
+    any(vapply(x, length, integer(1)) > 1)
+  })]
+  
+  # Copia para no modificar el data.frame original
+  df_visual <- df
+  
+  # Convertir los vectores internos a texto
+  df_visual[cols_problematicas] <- lapply(
+    df_visual[cols_problematicas],
+    function(x) {
+      vapply(
+        x,
+        function(y) paste(y, collapse = ", "),
+        character(1)
+      )
+    }
+  )
+  
+  df_visual
+}
 ```
 
 ```{r}
-dat <- read.table("./notebooks/car data.csv", sep = ";", header = TRUE)
+tabla_con_vectores_visual(df_discret)
+```
+
+### 3.2. Discretización por igual anchura
+
+Podemos seleccionar una variable concreta y especificar el número de intervalos que queremos utilizar.
+
+En este caso dividiremos `Kms_Driven` en 10 intervalos de igual anchura.
+
+```{r discret_anchura}
+df_discret <- discretizar(
+  df,
+  columnas = list("Kms_Driven"),
+  metodo = "anchura",
+  n_intervalos = 10,
+  verbose = 2
+)
+
+tabla_con_vectores_visual(df_discret)
+```
+
+### 3.3. Discretización por igual frecuencia
+
+También podemos utilizar el método de igual frecuencia.
+
+En este caso los intervalos se construyen de manera que contengan, aproximadamente, el mismo número de observaciones.
+
+```{r discret_frecuencia}
+df_discret <- discretizar(
+  df,
+  columnas = list("Kms_Driven"),
+  metodo = "frecuencia",
+  n_intervalos = 10,
+  verbose = 2
+)
+
+tabla_con_vectores_visual(df_discret)
+```
+
+### 3.4. Especificar directamente la frecuencia
+
+Otra posibilidad es indicar directamente cuántas observaciones queremos aproximadamente en cada intervalo.
+
+La función se encarga de calcular automáticamente los límites necesarios.
+
+```{r discret_frecuencia_directa}
+df_discret <- discretizar(
+  df,
+  columnas = list("Kms_Driven"),
+  metodo = "frecuencia",
+  frecuencia = 10,
+  verbose = 2
+)
+
+tabla_con_vectores_visual(df_discret)
+```
+
+## 4. Cálculo de métricas
+
+Una vez que hemos visto cómo transformar las variables, podemos calcular diferentes métricas para estudiar sus características.
+
+Podemos calcular:
+
+- **Entropía** para variables discretas.
+- **Varianza** para variables numéricas.
+- **AUC** cuando disponemos y asignamos una variable objetivo binaria, es decir, 2 clases.
+
+Estas métricas pueden utilizarse posteriormente para seleccionar o filtrar variables.
+
+```{r metricas_basico}
+metricas <- calcular_metricas(df)
+
+metricas
+```
+
+También podemos calcular las métricas sobre un conjunto concreto de variables y asignando clases para el cálculo de AUC.
+
+```{r metricas_clases}
+metricas <- calcular_metricas(
+  df,
+  clases = df$Transmission,
+  verbose=1
+)
+
+metricas
+```
+
+## 5. Normalización y estandarización
+
+La librería incluye dos transformaciones habituales para preparar variables numéricas:
+
+- **Normalización**: transforma los valores al rango `[0, 1]`.
+- **Estandarización**: transforma los valores para trabajar alrededor de una media de 0 y una desviación estándar de 1.
+
+En ambos casos podemos indicar las variables que queremos transformar.
+
+```{r normalizar}
+df_normalizado <- normalizar(
+  df,
+  atributos = list("Selling_Price", "Present_Price", "Kms_Driven")
+)
+
+head(df_normalizado)
+```
+
+```{r estandarizar}
+df_estandarizado <- estandarizar(
+  df,
+  atributos = list("Selling_Price", "Present_Price", "Kms_Driven")
+)
+
+head(df_estandarizado)
+```
+
+## 6. Filtrado de variables
+
+Una vez calculadas las métricas podemos utilizarlas para seleccionar variables.
+
+La función `filtrar_variables` permite conservar o descartar variables según un umbral determinado.
+
+El criterio utilizado depende del tipo de variable y de la métrica seleccionada.
+
+Si no se le dan los datos, hace los cálculos automáticamente.
+
+```{r filtrar_entropia}
+df_filtrado <- filtrar_variables(
+  df,
+  entropia = c(0.3, 0.4),
+  modo = "dentro"
+)
+eliminadas <- setdiff(colnames(df), colnames(df_filtrado))
+
+cat("Variables eliminadas:", length(eliminadas), "\n")
+print(eliminadas)
+```
+
+Se pueden usar como umbrales: la entropía, la varianza y el AUC. Se recomienda hacer una normalización o estandarización antes de utilizar el filtro.
+
+También tiene tanto modo `'dentro'` como `'fuera'` del rango que se le añada a cada umbral.
+
+Destacar que permite el uso de múltiples umbrales al mismo tiempo, donde se aplica discreto a los discretos y numérico a los numéricos. Aunque varianza y AUC a la vez hacen "and".
+
+```{r filtrar_varianza}
+df_filtrado <- filtrar_variables(
+  df_estandarizado,
+  # entropia = c(0.3, 0.4),
+  varianza = c(0.3, 0.5),
+  modo = "dentro"
+)
+eliminadas <- setdiff(colnames(df), colnames(df_filtrado))
+
+cat("Variables eliminadas:", length(eliminadas), "\n")
+print(eliminadas)
+```
+
+De todas maneras se puede hacer por partes; calculando las métricas fuera y eligiendo los atributos que se desee.
+
+```{r filtrar_por_partes}
+cat("----------* CALCULANDO METRICAS *----------\n")
+metricas <- calcular_metricas(df_estandarizado)
+
+cat("----------* FILTRANDO DATASET *----------\n")
+df_filtrado <- filtrar_variables(
+  dataset = df_estandarizado,
+  # entropia = c(0.3, 0.4),
+  varianza = c(0.3, 0.5),
+  modo = "dentro",
+  metricas = metricas,
+  verbose = 2
+)
+eliminadas <- setdiff(colnames(df), colnames(df_filtrado))
+
+cat("Variables eliminadas:", length(eliminadas), "\n")
+print(eliminadas)
+```
+
+## 7. Correlación e información mutua
+
+`SME_R` permite estudiar diferentes tipos de relación entre variables dependiendo de su naturaleza:
+
+- **Pearson** para variables numéricas.
+- **Información mutua** para variables categóricas.
+- **Welch** para estudiar la relación entre una variable categórica y una numérica.
+
+La función selecciona el cálculo apropiado en función del tipo de variables.
+
+```{r correlaciones}
+correlaciones <- calcular_correlacion(df,verbose=1)
+
+correlaciones
+```
+
+## 8. Visualización de resultados
+
+Finalmente, la librería incorpora funciones de visualización para representar los resultados de algunos de los análisis anteriores.
+
+```{r}
+install.packages("ggplot2")
+install.packages("patchwork")
+install.packages("gridExtra")
+install.packages("pROC")
 ```
 
 ```{r}
-dat
+library(ggplot2)
 ```
+
+Entre ellas encontramos visualizaciones para:
+
+- AUC.
+- Correlaciones de Pearson.
+- Información mutua.
+- Estadísticos de Welch.
+
+```{r graficar_auc}
+fig <- graficar_auc(
+  df$Selling_Price,
+  df$Transmission
+)
+```
+
+Recordemos, `Selling_Price` es el precio al que quiere venderlo el dueño, `Present_Price` es el precio que tenía en el concesionario.
+
+```{r graficar_pearson}
+# Si no tenemos los resultados los calculara automaticamente
+fig1 <- graficar_pearson(
+  df$Present_Price,
+  df$Selling_Price
+)
+
+# Si los tenemos nosotros podemos meterlos directamente
+resultado <- calcular_correlacion(
+  df,
+  atributos = list("Present_Price", "Selling_Price")
+)
+
+fig2 <- graficar_pearson(
+  df$Present_Price,
+  df$Selling_Price,
+  resultado = resultado[["Present_Price"]][["Selling_Price"]]
+)
+```
+
+Veamos los dos gráficos uno al lado del otro...
+
+```{r graficos_lado_a_lado, fig.width=10, fig.height=5}
+library(gridExtra)
+
+grid.arrange(fig1, fig2, ncol = 2)
+```
+
+```{r columnas}
+colnames(df)
+```
+
+```{r graficar_informacion_mutua}
+fig <- graficar_informacion_mutua(
+  df$Fuel_Type,
+  df$Seller_Type
+)
+fig
+```
+
+```{r graficar_welch}
+fig <- graficar_welch(
+  df$Fuel_Type,
+  df$Selling_Price,
+  verbose = 3
+)
+fig
+```
+
+## Conclusión
+
+A lo largo de este documento hemos visto las principales funcionalidades de `SME_R`, desde la preparación de los datos hasta el cálculo de métricas, transformación y selección de variables, análisis de relaciones y visualización de resultados.

@@ -1,7 +1,6 @@
 from auxiliar.verbose import _verbose
 from auxiliar.auxiliar_es import (
     _es_dataset,
-    _es_variable,
     _es_discreta,
     _es_continua
 )
@@ -13,7 +12,6 @@ import numpy as np
 def calcular_correlacion(
     dataset,
     atributos=None,
-    normalizar=False,
     verbose=1
 ):
     """
@@ -41,12 +39,6 @@ def calcular_correlacion(
     atributos : list o None
         Lista de nombres de columnas que se quieren analizar.
         Si es None, se utilizan todas las columnas del dataset.
-
-    normalizar : bool
-        Indica si se deben normalizar los resultados a una escala 0-1.
-
-        TODO:
-        Actualmente esta funcionalidad no está implementada.
 
     verbose : int
         Nivel de información que se muestra durante la ejecución.
@@ -154,7 +146,6 @@ def calcular_correlacion(
                 dataset[atributo2],
                 tipos[atributo1],
                 tipos[atributo2],
-                normalizar,
                 verbose
             )
 
@@ -168,8 +159,10 @@ def calcular_correlacion(
             detalles[(atributo2, atributo1)] = resultado
 
     _verbose(
-        "Cálculo de correlaciones finalizado.",
-        verbose
+        "Calculo de correlaciones finalizado correctamente.",
+        verbose,
+        nivel=1,
+        tipo="success"
     )
 
     return matriz, detalles
@@ -180,7 +173,6 @@ def _calc_atributo(
     atributo2,
     tipo1,
     tipo2,
-    normalizar=False,
     verbose=1
 ):
     """
@@ -194,7 +186,6 @@ def _calc_atributo(
         return _calc_corr_catg(
             atributo1,
             atributo2,
-            normalizar,
             verbose
         )
 
@@ -203,7 +194,6 @@ def _calc_atributo(
         return _calc_corr_num(
             atributo1,
             atributo2,
-            normalizar,
             verbose
         )
 
@@ -216,7 +206,6 @@ def _calc_atributo(
         return _calc_corr_catg_num(
             atributo1,
             atributo2,
-            normalizar,
             verbose
         )
 
@@ -230,7 +219,6 @@ def _calc_atributo(
 def _calc_corr_num(
     atributo1,
     atributo2,
-    normalizar=False,
     verbose=1
 ):
     """
@@ -269,8 +257,8 @@ def _calc_corr_num(
             "No hay suficientes datos para calcular la correlación."
         )
 
-    x = datos["x"]
-    y = datos["y"]
+    x = datos["x"].astype(np.float64) # Para que no ocurra: RuntimeWarning: overflow encountered in scalar multiply denominador = (parte_x * parte_y) ** 0.5
+    y = datos["y"].astype(np.float64)
 
     n = len(datos)
 
@@ -303,10 +291,6 @@ def _calc_corr_num(
 
     r = numerador / denominador
 
-    if normalizar:
-        # TODO:
-        # Normalizar el resultado de Pearson a [0, 1].
-        pass
 
     return {
         "tipo": "pearson",
@@ -323,7 +307,6 @@ def _calc_corr_num(
 def _calc_corr_catg(
     atributo1,
     atributo2,
-    normalizar=False,
     verbose=1
 ):
     """
@@ -343,13 +326,12 @@ def _calc_corr_catg(
 
     nombre1 = getattr(atributo1, "name", None) or "Atributo 1"
     nombre2 = getattr(atributo2, "name", None) or "Atributo 2"
-
+    
     datos = pd.DataFrame({
         "x": pd.Series(atributo1).reset_index(drop=True),
         "y": pd.Series(atributo2).reset_index(drop=True)
     })
-
-    datos = datos.dropna()
+    
 
     if len(datos) == 0:
         raise ValueError(
@@ -382,11 +364,6 @@ def _calc_corr_catg(
 
             resultado += p_xy * np.log(p_xy / (p_x * p_y))
 
-    if normalizar:
-        # TODO:
-        # Normalizar MI a [0, 1].
-        pass
-
     return {
         "tipo": "informacion_mutua",
         "valor": resultado,
@@ -400,7 +377,6 @@ def _calc_corr_catg(
 def _calc_corr_catg_num(
     atributo1,
     atributo2,
-    normalizar=False,
     verbose=1
 ):
     """
@@ -523,11 +499,6 @@ def _calc_corr_catg_num(
     # TODO:
     # Calcular los grados de libertad del denominador y el p-value
     # a partir de la distribución F.
-
-    if normalizar:
-        # TODO:
-        # Normalizar el resultado a [0, 1].
-        pass
 
     return {
         "tipo": "welch",

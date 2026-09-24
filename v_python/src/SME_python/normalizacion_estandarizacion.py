@@ -1,5 +1,5 @@
 from auxiliar.verbose import _verbose
-from auxiliar.auxiliar_es import _es_dataset, _es_variable, _es_discreta,_es_continua
+from auxiliar.auxiliar_es import _es_dataset, _es_discreta,_es_continua
 import pandas as pd
 
 def normalizar(dataset, atributos=None, verbose=1):
@@ -48,10 +48,9 @@ def _transformar_dataset(dataset, atributos, funcion, verbose=1):
     solo las columnas continuas (las discretas quedan sin cambios).
     """
 
-    if _es_variable(dataset):
-        return funcion(dataset, verbose)
+   
 
-    elif _es_dataset(dataset):
+    if _es_dataset(dataset):
         resultado = dataset.copy()
 
         if atributos is not None:
@@ -72,9 +71,12 @@ def _transformar_dataset(dataset, atributos, funcion, verbose=1):
         return resultado
 
     else:
-        raise TypeError(
-            "dataset debe ser una Series o un DataFrame."
-        )
+        try:
+            return funcion(dataset, verbose)
+        except AttributeError:
+            raise TypeError(
+                "dataset debe ser una Series o un DataFrame."
+            )
     
 def _normalizar_variable(columna, verbose=1):
     """Normaliza una variable numérica."""
@@ -96,6 +98,12 @@ def _normalizar_variable(columna, verbose=1):
             f"No se puede normalizar '{columna.name}': "
             "todos sus valores son iguales."
         )
+    _verbose(
+        "Variable normalizada correctamente.",
+        verbose,
+        nivel=1,
+        tipo="success"
+    )
 
     return (columna - minimo) / (maximo - minimo)
 
@@ -120,5 +128,12 @@ def _estandarizar_variable(columna, verbose=1):
             f"No se puede estandarizar '{columna.name}': "
             "la desviación estándar es 0."
         )
+    
+    _verbose(
+        "Variable estandarizada correctamente.",
+        verbose,
+        nivel=1,
+        tipo="success"
+    )
 
     return (columna - media) / desviacion

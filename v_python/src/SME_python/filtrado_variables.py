@@ -141,6 +141,13 @@ def filtrar_variables(
                     and _cumple_filtro(valores.get("auc"), auc, modo)):
                 columnas_validas.append(columna)
 
+    _verbose(
+        "Filtro pasado correctamente.",
+        verbose,
+        nivel=1,
+        tipo="success"
+    )
+
     return dataset[columnas_validas].copy()
 
     

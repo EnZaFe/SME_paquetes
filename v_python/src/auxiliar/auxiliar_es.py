@@ -1,9 +1,11 @@
 #Codigo auiliar con metodos que se usan en varias funcionalidades
 import pandas as pd
+from auxiliar.verbose import _verbose
 
 
-def _es_variable(datos):
+def _es_variable(datos, verbose=1):
     """
+    DEPRECATED: Teniendo _es_continua y _es_discreta y _es_dataset, nahiko, esto solo lia y ni hace lo que deberia.
     Determina si `datos` es una variable numérica.
 
     Una variable es un ``pd.Series`` cuyo tipo de dato es numérico.
@@ -21,6 +23,8 @@ def _es_variable(datos):
         ``True`` si es un ``pd.Series`` numérico, ``False`` en caso
         contrario.
     """
+    _verbose(mensaje='DEPRECATED: No deberia hacerse uso de _es_variable, ya no hace lo que deberia', tipo='warning', verbose=1)
+
     return (
         isinstance(datos, pd.Series)
         and pd.api.types.is_numeric_dtype(datos)

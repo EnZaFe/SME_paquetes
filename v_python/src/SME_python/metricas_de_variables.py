@@ -3,7 +3,7 @@ enunciado:
 Cálculo de métricas para los atributos de un dataset: varianza y AUC para las variables contínuas y entropía para las discretas. La función deberá reconocer el tipo de atributo y actuar en consecuencia. Notese que en el caso del AUC, el dataset debe ser supervisado, es decir, es necesario especificar una variable clase binaria con la que evaluar el AUC de los atributos numéricos.
 '''
 from auxiliar.verbose import _verbose 
-from auxiliar.auxiliar_es import _es_dataset, _es_variable, _es_discreta,_es_continua
+from auxiliar.auxiliar_es import _es_dataset, _es_discreta,_es_continua
 import pandas as pd
 from math import log2
 
@@ -63,31 +63,9 @@ def calcular_metricas(dataset, clases=None, atributos=None, verbose=1):
             nivel=2
         )
 
-    if _es_variable(dataset):
 
-            _verbose(
-                f"Se ha recibido una variable: '{dataset.name}'.",
-                verbose,
-                nivel=2
-            )
-
-            metricas = _calcular_metricas_variable(
-                dataset,
-                clases,
-                verbose
-            )
-
-            _verbose(
-                "Cálculo de métricas finalizado.",
-                verbose,
-                nivel=1,
-                tipo="success"
-            )
-
-            return metricas
-
-        # Si es un dataset
-    elif _es_dataset(dataset):
+    # Si es un dataset
+    if _es_dataset(dataset):
 
         _verbose(
             f"Se ha recibido un dataset con "
@@ -111,19 +89,50 @@ def calcular_metricas(dataset, clases=None, atributos=None, verbose=1):
         )
 
         return metricas
-
     else:
+        try:
+            _verbose(
+                f"Se ha recibido una variable: '{dataset.name}'.",
+                verbose,
+                nivel=2
+            )
 
-        _verbose(
-            "El objeto recibido no es una Series ni un DataFrame.",
-            verbose,
-            nivel=1,
-            tipo="warning"
-        )
+            metricas = _calcular_metricas_variable(
+                dataset,
+                clases,
+                verbose
+            )
 
-        raise TypeError(
-            "dataset debe ser una Series o un DataFrame."
-        )
+            _verbose(
+                "Cálculo de métricas finalizado.",
+                verbose,
+                nivel=1,
+                tipo="success"
+            )
+
+            return metricas
+        
+        except AttributeError:
+            _verbose(
+                "El objeto recibido no es una Series ni un DataFrame.",
+                verbose,
+                nivel=1,
+                tipo="warning"
+            )
+            raise TypeError(
+                "dataset debe ser una Series o un DataFrame."
+            )
+        
+            # else:
+
+            #     _verbose(
+            #         "El objeto recibido no es una Series ni un DataFrame.",
+            #         verbose,
+            #         nivel=1,
+            #         tipo="warning"
+            #     )
+
+
 
 
 def _calcular_metricas_dataset(dataset, clases, atributos_clm, verbose=1):

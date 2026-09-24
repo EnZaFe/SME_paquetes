@@ -400,6 +400,13 @@ def graficar_auc(
         dpi=110,
         bbox_inches="tight",
     )
+
+    _verbose(
+        "Grafico de AUC y distribucion creados correctamente.",
+        verbose,
+        nivel=1,
+        tipo="success"
+    )
     return fig
 
 
@@ -595,6 +602,13 @@ def graficar_pearson(
     )
 
     plt.close(grafico.figure)
+    _verbose(
+        "Grafico pearson creado correctamente.",
+        verbose,
+        nivel=1,
+        tipo="success"
+    )
+
     return grafico.figure
 
 
@@ -794,6 +808,13 @@ def graficar_informacion_mutua(
         dpi=110,
         bbox_inches="tight",
     )
+    _verbose(
+        "Grafico de información mutua creado correctamente.",
+        verbose,
+        nivel=1,
+        tipo="success"
+    )
+
     return fig
 
 
@@ -830,7 +851,6 @@ def _welch_anova(valores_grupos):
     gl2 = (k ** 2 - 1) / (3 * tmp)
     return float(f), gl1, float(gl2), float(stats.f.sf(f, gl1, gl2))
 
-
 def graficar_welch(
     atributo1,
     atributo2,
@@ -840,7 +860,8 @@ def graficar_welch(
     alfa=0.05,
     verbose=1,
     path=".",
-    nombre_carpeta="figures"
+    nombre_carpeta="figures",
+    limite_y=None
 ):
     """
     Boxplot + puntos individuales por grupo, con la media de cada
@@ -978,7 +999,11 @@ def graficar_welch(
     # medias: conectarlas afirmaría un orden que no existe.
 
     y_min, y_max = ax.get_ylim()
-    ax.set_ylim(y_min, y_max + 0.24 * (y_max - y_min))
+
+    if limite_y is not None:
+        y_max = limite_y
+
+    ax.set_ylim(y_min, y_max)
 
     for i, g in enumerate(grupos_ordenados):
 
@@ -1053,4 +1078,11 @@ def graficar_welch(
         dpi=110,
         bbox_inches="tight",
     )
+    _verbose(
+        "Grafico welch creado correctamente.",
+        verbose,
+        nivel=1,
+        tipo="success"
+    )
+
     return fig

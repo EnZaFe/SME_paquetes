@@ -3,7 +3,7 @@ requires = ["setuptools>=61.0", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "sme-python"
+name = "SME_python"
 version = "0.1.2"
 description = "Librería para la gestión y análisis de datasets (discretización, métricas, normalización, filtrado, correlación e información mutua)."
 readme = "README.md"
@@ -36,9 +36,8 @@ dev = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/your-username/SME_Python"
+Homepage = "https://github.com/EnZaFe/SME_paquetes.git"
 
-# Layout del proyecto: el paquete vive en src/SME_python.
 [tool.setuptools.packages.find]
 where = ["src"]
 
