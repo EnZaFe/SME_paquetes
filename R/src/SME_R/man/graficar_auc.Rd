@@ -31,7 +31,8 @@ mismo número de elementos que \code{atributo_clm}.}
 \item{nombre_carpeta}{Nombre de la subcarpeta (por defecto \code{"figures"}).}
 }
 \value{
-Un objeto \code{ggplot} con la curva ROC y la distribución por clase, guardado como \code{demo_auc.png}.
+Un objeto \code{patchwork}/\code{ggplot} con la curva ROC y la distribución por clase,
+guardado como \code{demo_auc.png}.
 }
 \description{
 Curva ROC + distribución del atributo numérico por clase. Se puede llamar

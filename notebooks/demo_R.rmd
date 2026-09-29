@@ -44,7 +44,7 @@ devtools::load_all("C:/Users/Burbu/Desktop/SME_Python/R/src/SME_R") # Durante la
 
 ```{r}
 #devtools::document("../R/src/SME_R") #Para documentacion automatica
-detach("package:SMER", unload = TRUE)
+#detach("package:SMER", unload = TRUE)
 devtools::install_github(
   "EnZaFe/SME_paquetes",
   subdir = "R/src/SME_R",
@@ -65,7 +65,6 @@ packageVersion("SMER")
 
 #setwd("C:/Users/Burbu/Desktop/SME_Python/R/src/SME_R")
 #roxygen2::roxygenise(clean = TRUE)
-
 ```
 
 ## 2. Dataset
@@ -76,14 +75,14 @@ El dataset contiene información sobre vehículos de segunda mano e incluye tant
 
 Entre las variables disponibles encontramos:
 
-- `Year`: año del vehículo.
-- `Selling_Price`: precio de venta.
-- `Present_Price`: precio actual estimado.
-- `Kms_Driven`: kilómetros recorridos.
-- `Fuel_Type`: tipo de combustible.
-- `Seller_Type`: tipo de vendedor.
-- `Transmission`: tipo de transmisión.
-- `Owner`: número de propietarios anteriores.
+- `name`: nombre del vehículo
+- `year`: año del vehículo.
+- `selling_price`: precio de venta.
+- `km_driven`: kilómetros recorridos.
+- `fuel`: tipo de combustible.
+- `seller_type`: tipo de vendedor.
+- `transmission`: tipo de transmisión.
+- `owner`: número de propietarios anteriores.
 
 ### Carga del dataset
 
@@ -103,7 +102,7 @@ df <- read.csv("car data.csv")
 En caso de que ya tengamos un dataset descargado o queramos hacer pruebas, podemos utilizar la función `load_dataset`, con la que podemos convertir automáticamente a `data.frame` cualquier archivo de excel o texto. Además, nos permite cargar directamente 3 datasets clásicos: iris, wine y breast_cancer.
 
 ```{r load_dataset}
-df <- cargar_dataset("car data.csv")
+df <- cargar_dataset("CAR DETAILS FROM CAR DEKHO.csv")
 class(df)
 
 df_iris <- cargar_dataset("iris")
@@ -145,17 +144,15 @@ df_discret <- discretizar(df)
 head(df_discret)
 ```
 
-Como no podemos ver los numeros directamente vamos a utilizar una función extra para ver como han quedado los intervalos discretizados.
+Como no podemos ver los numeros directamente vamos a mostrar las primeras filas del dataset discretizado.
 
 ```{r}
 tabla_con_vectores_visual <- function(df) {
   
-  # Detectar columnas que contienen vectores/listas
   cols_problematicas <- names(df)[sapply(df, function(x) {
     any(vapply(x, length, integer(1)) > 1)
   })]
   
-  # Copia para no modificar el data.frame original
   df_visual <- df
   
   # Convertir los vectores internos a texto
@@ -172,28 +169,27 @@ tabla_con_vectores_visual <- function(df) {
   
   df_visual
 }
-```
 
-```{r}
-tabla_con_vectores_visual(df_discret)
+
+head(tabla_con_vectores_visual(df_discret))
 ```
 
 ### 3.2. Discretización por igual anchura
 
 Podemos seleccionar una variable concreta y especificar el número de intervalos que queremos utilizar.
 
-En este caso dividiremos `Kms_Driven` en 10 intervalos de igual anchura.
+En este caso dividiremos `km_driven` en 10 intervalos de igual anchura.
 
 ```{r discret_anchura}
 df_discret <- discretizar(
   df,
-  columnas = list("Kms_Driven"),
+  columnas = list("km_driven"),
   metodo = "anchura",
   n_intervalos = 10,
   verbose = 2
 )
 
-tabla_con_vectores_visual(df_discret)
+head(tabla_con_vectores_visual(df_discret))
 ```
 
 ### 3.3. Discretización por igual frecuencia
@@ -205,13 +201,13 @@ En este caso los intervalos se construyen de manera que contengan, aproximadamen
 ```{r discret_frecuencia}
 df_discret <- discretizar(
   df,
-  columnas = list("Kms_Driven"),
+  columnas = list("km_driven"),
   metodo = "frecuencia",
   n_intervalos = 10,
   verbose = 2
 )
 
-tabla_con_vectores_visual(df_discret)
+head(tabla_con_vectores_visual(df_discret))
 ```
 
 ### 3.4. Especificar directamente la frecuencia
@@ -223,13 +219,13 @@ La función se encarga de calcular automáticamente los límites necesarios.
 ```{r discret_frecuencia_directa}
 df_discret <- discretizar(
   df,
-  columnas = list("Kms_Driven"),
+  columnas = list("km_driven"),
   metodo = "frecuencia",
   frecuencia = 10,
   verbose = 2
 )
 
-tabla_con_vectores_visual(df_discret)
+head(tabla_con_vectores_visual(df_discret))
 ```
 
 ## 4. Cálculo de métricas
@@ -245,8 +241,7 @@ Podemos calcular:
 Estas métricas pueden utilizarse posteriormente para seleccionar o filtrar variables.
 
 ```{r metricas_basico}
-metricas <- calcular_metricas(df)
-
+metricas <- calcular_metricas(df, verbose = 2)
 metricas
 ```
 
@@ -274,7 +269,7 @@ En ambos casos podemos indicar las variables que queremos transformar.
 ```{r normalizar}
 df_normalizado <- normalizar(
   df,
-  atributos = list("Selling_Price", "Present_Price", "Kms_Driven")
+  atributos = list("selling_price", "km_driven")
 )
 
 head(df_normalizado)
@@ -283,7 +278,7 @@ head(df_normalizado)
 ```{r estandarizar}
 df_estandarizado <- estandarizar(
   df,
-  atributos = list("Selling_Price", "Present_Price", "Kms_Driven")
+  atributos = list("selling_price", "km_driven")
 )
 
 head(df_estandarizado)
@@ -303,8 +298,10 @@ Si no se le dan los datos, hace los cálculos automáticamente.
 df_filtrado <- filtrar_variables(
   df,
   entropia = c(0.3, 0.4),
-  modo = "dentro"
+  modo = "dentro",
+  verbose = 2
 )
+# Variables que han sido eliminadas por el filtro.
 eliminadas <- setdiff(colnames(df), colnames(df_filtrado))
 
 cat("Variables eliminadas:", length(eliminadas), "\n")
@@ -360,11 +357,20 @@ print(eliminadas)
 - **Welch** para estudiar la relación entre una variable categórica y una numérica.
 
 La función selecciona el cálculo apropiado en función del tipo de variables.
+```{r}
+
+correlaciones <- calcular_correlacion(df)
+
+correlaciones[0] # Tambien tenemos los detalles de cada calculo para los graficos
+
+```
+
 
 ```{r correlaciones}
-correlaciones <- calcular_correlacion(df,verbose=1)
+correlaciones <- calcular_correlacion(df, atributos = list("Present_Price", "Selling_Price"), verbose = 1)
 
-correlaciones
+# El primer elemento contiene los detalles de cada par de variables.
+correlaciones[["detalles"]][["Present_Price|Selling_Price"]]
 ```
 
 ## 8. Visualización de resultados
@@ -372,9 +378,7 @@ correlaciones
 Finalmente, la librería incorpora funciones de visualización para representar los resultados de algunos de los análisis anteriores.
 
 ```{r}
-install.packages("ggplot2")
-install.packages("patchwork")
-install.packages("gridExtra")
+# Solo necesitamos pROC para las funciones de visualización de la librería.
 install.packages("pROC")
 ```
 
@@ -392,33 +396,31 @@ Entre ellas encontramos visualizaciones para:
 ```{r graficar_auc}
 fig <- graficar_auc(
   df$Selling_Price,
-  df$Transmission
+  df$Transmission,
+  pregunta = "¿Es buena compra?"
 )
 ```
 
 Recordemos, `Selling_Price` es el precio al que quiere venderlo el dueño, `Present_Price` es el precio que tenía en el concesionario.
 
 ```{r graficar_pearson}
-# Si no tenemos los resultados los calculara automaticamente
+# Si ya tenemos los resultados podemos pasarlos directamente a la función.
 fig1 <- graficar_pearson(
   df$Present_Price,
-  df$Selling_Price
-)
-
-# Si los tenemos nosotros podemos meterlos directamente
-resultado <- calcular_correlacion(
-  df,
-  atributos = list("Present_Price", "Selling_Price")
-)
-
-fig2 <- graficar_pearson(
-  df$Present_Price,
   df$Selling_Price,
-  resultado = resultado[["Present_Price"]][["Selling_Price"]]
+  resultado = correlaciones[["matriz"]][["Present_Price", "Selling_Price"]]
 )
 ```
 
 Veamos los dos gráficos uno al lado del otro...
+
+\</VSCode.Cell\> \<VSCode.Cell id="#VSC-f8e5f7b6" language="r"\> fig1 \<- graficar_pearson( df$Present_Price,
+  df$Selling_Price )
+
+fig2 \<- graficar_pearson( df$Kms_Driven,
+  df$Selling_Price )
+
+grid.arrange(fig1, fig2, ncol = 2)
 
 ```{r graficos_lado_a_lado, fig.width=10, fig.height=5}
 library(gridExtra)

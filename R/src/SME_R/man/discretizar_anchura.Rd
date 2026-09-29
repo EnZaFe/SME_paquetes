@@ -14,7 +14,7 @@ discretizar_anchura(columna_variable, n_intervalos, verbose = 1)
 \item{verbose}{Nivel de verbosidad.}
 }
 \value{
-Una lista con los pares de límites de intervalo \link{limite_inferior, limite_superior}.
+Un vector con los pares de límites de intervalo \link{limite_inferior, limite_superior}.
 }
 \description{
 Discretiza una variable numérica en intervalos de igual anchura.

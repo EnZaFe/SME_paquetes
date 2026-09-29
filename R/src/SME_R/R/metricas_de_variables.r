@@ -8,34 +8,55 @@
 #' @param atributos Columnas específicas a analizar. Si es NULL, se analizan todas las columnas.
 #' @param verbose Nivel de verbosidad.
 #' @return Para una variable discreta: lista con `entropia`. Para una continua sin clases: lista con `varianza`. Para una continua con clases: lista con `varianza` y `auc`. Para un dataset, el mismo dataset con las columnas anotadas con sus métricas.
-calcular_metricas <- function(dataset, clases = NULL, atributos = NULL, verbose = 1) {
-    # Objetivo: calcular las métricas de una o varias variables de un dataset.
-    # Uso: calcular_metricas(df, clases = "Clase", atributos = list("Edad"), verbose = 0)
+#' @export
+calcular_metricas <- function(
+    dataset,
+    clases = NULL,
+    atributos = NULL,
+    verbose = 1
+) {
 
-    .verbose("Iniciando cálculo de métricas...", verbose)
+    .verbose(
+        "Iniciando cálculo de métricas...",
+        verbose
+    )
 
-    # RAISE ERRORS para uso adecuado de las funciones
-    if (!is.list(atributos) && !is.null(atributos)) {
-        .verbose("atributos debe ser una lista o None", verbose, nivel = 1, tipo = "error")
+    if (!is.null(atributos) && !is.list(atributos)) {
+
+        .verbose(
+            "atributos debe ser una lista.",
+            verbose,
+            nivel = 1,
+            tipo = "error"
+        )
+
+        stop("atributos debe ser una lista.")
     }
 
-    # Si es un dataset
     if (.es_dataset(dataset)) {
-        return(.calcular_metricas_dataset(
-            dataset, clases, atributos, verbose
-        ))
+        .verbose(
+            "Si es un dataset",
+            nivel = 3,
+            verbose
+        )
+        return(
+            .calcular_metricas_dataset(
+                dataset = dataset,
+                clases = clases,
+                atributos_clm = atributos,
+                verbose = verbose
+            )
+        )
     }
 
-    # Si es una variable
-    else if (.es_variable(dataset)) {
-        return(.calcular_metricas_variable(
-            dataset, clases, verbose
-        ))
-    }
+    .verbose(
+        "El argumento 'dataset' debe ser un data.frame.",
+        verbose,
+        nivel = 1,
+        tipo = "error"
+    )
 
-    else {
-        .verbose("dataset debe ser un data.frame.", verbose, nivel = 1, tipo = "error")
-    }
+    stop("El argumento 'dataset' debe ser un data.frame.")
 }
 
 
@@ -48,11 +69,10 @@ calcular_metricas <- function(dataset, clases = NULL, atributos = NULL, verbose 
 #' @param verbose Nivel de verbosidad.
 #' @return El dataset con cada columna anotada con su métrica (entropía o varianza/auc).
 .calcular_metricas_dataset <- function(dataset, clases, atributos_clm, verbose = 1) {
-    # Calcular las métricas de un dataset entero.
-    # Se calculan las métricas de cada columna indicada (o de todas las columnas).
+    resultados <- list()
 
-    if (!is.null(clases)) {
-        df <- dataset
+    if (!is.null(atributos_clm)) {
+
         for (col in atributos_clm) {
             if (!(col %in% names(df))) {
                 .verbose(paste0("La columna '", col, "' no existe en el dataset."), verbose, nivel = 1, tipo = "error")
@@ -61,20 +81,31 @@ calcular_metricas <- function(dataset, clases = NULL, atributos = NULL, verbose 
             if (!.es_variable(df[[col]])) {
                 .verbose(paste0("La columna '", col, "' no es numérica."), verbose, nivel = 1, tipo = "error")
             }
-
-            df[[col]] <- .calcular_metricas_variable(df[[col]], clases, verbose)
+            .verbose(
+                paste0("Calculando metricas de columna '", col, "."),
+                nivel = 3,
+                verbose
+            )
+            resultados[[col]] <- .calcular_metricas_variable(
+                dataset[[col]],
+                clases,
+                verbose
+            )
         }
-        return(df) # FIN
+
+        return(resultados)
     }
 
     # Si no se indican las clases, se calculan las métricas de todas las columnas.
     df <- dataset
     for (col in names(df)) {
-        if (.es_variable(df[[col]])) {
-            df[[col]] <- .calcular_metricas_variable(df[[col]], NULL, verbose)
-        }
+            resultados[[col]] <- .calcular_metricas_variable(
+                dataset[[col]],
+                clases,
+                verbose
+            )
     }
-    return(df) # FIN
+    return(resultados)
 }
 
 
@@ -88,8 +119,22 @@ calcular_metricas <- function(dataset, clases = NULL, atributos = NULL, verbose 
 .calcular_metricas_variable <- function(columna, clases, verbose = 1) {
     # Calcular las métricas de una sola variable.
     # Discreta -> entropía. Continua -> varianza y AUC (si se proporcionan clases).
+    .verbose(
+        paste0("Calculando métricas de columna '", columna, "'."),
+        nivel = 3,
+        verbose
+    )
 
     if (.es_discreta(columna)) {
+        .verbose(
+            paste0(
+                "Se ha detectado que '", columna, "' es discreta ",
+                "Calculando entropia..."
+            ),
+            verbose,
+            nivel = 2
+        )
+
         return(.calcular_metricas_discreta(
             columna,
             verbose
@@ -99,7 +144,7 @@ calcular_metricas <- function(dataset, clases = NULL, atributos = NULL, verbose 
 
         .verbose(
             paste0(
-                "Se ha detectado que '", columna.name, "' es continua. ",
+                "Se ha detectado que '", columna, "' es continua. ",
                 "Calculando varianza y AUC..."
             ),
             verbose,
@@ -117,7 +162,7 @@ calcular_metricas <- function(dataset, clases = NULL, atributos = NULL, verbose 
         .verbose(
             paste0(
                 "No se puede determinar el tipo de la columna ",
-                "'", columna.name, "'."
+                "'", columna, "'."
             ),
             verbose,
             nivel = 1,
@@ -127,7 +172,7 @@ calcular_metricas <- function(dataset, clases = NULL, atributos = NULL, verbose 
         stop(
             paste0(
                 "No se puede determinar el tipo de la columna ",
-                "'", columna.name, "'."
+                "'", columna, "'."
             )
         )
     }

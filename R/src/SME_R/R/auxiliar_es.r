@@ -4,7 +4,7 @@
 
 .es_variable <- function(datos) {
     # Devuelve TRUE si `datos` es una variable numérica (vector numérico).
-
+    warning("La función .es_variable está obsoleta. Usa .es_continua en su lugar.", call. = FALSE)
     inherits(datos, "numeric")
 }
 

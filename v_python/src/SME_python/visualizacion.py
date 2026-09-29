@@ -575,7 +575,7 @@ def graficar_pearson(
     _verbose(
         f"Pearson · Cómo leerlo: cada punto es una observación; la recta es el ajuste lineal "
         f"y la banda, ±1 desviación del error. Respondes SÍ si |r| ≥ {umbral_r:.1f} y "
-        f"p < {alfa} (|r|: 0.3 débil · 0.5 moderada · 0.7 fuerte).",
+        f"p < {alfa}.",
         verbose, nivel=1,
     )
 

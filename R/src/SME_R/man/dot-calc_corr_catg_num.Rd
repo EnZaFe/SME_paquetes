@@ -4,23 +4,19 @@
 \alias{.calc_corr_catg_num}
 \title{Welch ANOVA de un factor entre un atributo categórico y uno numérico.}
 \usage{
-.calc_corr_catg_num(atributo1, atributo2, normalizar = FALSE, verbose = 1)
+.calc_corr_catg_num(atributo1, atributo2, verbose = 1)
 }
 \arguments{
-\item{atributo1}{Nombre o columna del primer atributo (categórico/discreto).}
+\item{atributo1}{Nombre o columna del primer atributo.}
 
-\item{atributo2}{Nombre o columna del segundo atributo (numérico/continuo).}
-
-\item{normalizar}{Si es TRUE, se normalizan los resultados a una escala 0-1.}
+\item{atributo2}{Nombre o columna del segundo atributo.}
 
 \item{verbose}{Nivel de información que se muestra durante la ejecución.}
 }
 \value{
-Un list con el estadístico \code{f}, el valor-p \code{p_value}, el número de observaciones \code{n}, y toda la información por grupo (medias, tamaños, varianzas) para poder pintar el boxplot sin volver a tocar los datos originales.
+Una lista con el estadístico F y toda la información por grupo.
 }
 \description{
 Comprueba si existen diferencias entre las medias de una variable continua
-para los distintos grupos de una variable discreta. Welch ANOVA es una
-variante del ANOVA de un factor que no requiere que las varianzas de los
-grupos sean iguales.
+para los distintos grupos de una variable discreta.
 }

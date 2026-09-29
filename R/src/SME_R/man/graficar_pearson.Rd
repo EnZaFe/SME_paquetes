@@ -33,9 +33,9 @@ graficar_pearson(
 Un objeto \code{ggplot} con el gráfico de dispersión y la recta ajustada, guardado como \code{pearson.png}.
 }
 \description{
-Dispersión + regresión lineal + distribuciones marginales entre dos variables
-numéricas, junto con el coeficiente de Pearson. Se puede llamar calculando todo
-internamente o reutilizando un resultado ya calculado.
+Dispersión + regresión lineal entre dos variables numéricas, junto con el
+coeficiente de Pearson. Se puede llamar calculando todo internamente o
+reutilizando un resultado ya calculado.
 }
 \section{Uso}{
 

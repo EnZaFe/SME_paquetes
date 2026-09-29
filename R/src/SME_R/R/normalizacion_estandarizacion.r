@@ -18,6 +18,7 @@
 #' @param atributos Columnas específicas a transformar. Si es NULL, se transforman todas las columnas continuas.
 #' @param verbose Nivel de verbosidad.
 #' @return Para una variable: el vector transformado. Para un dataset: el mismo data.frame con las columnas continuas transformadas.
+#' @export 
 normalizar <- function(dataset, atributos = NULL, verbose = 1) {
     # Objetivo: normalizar una variable o un dataset a escala [0, 1] (min-max).
     # Uso: normalizar(df, atributos = list("Edad"), verbose = 0)
@@ -54,6 +55,7 @@ normalizar <- function(dataset, atributos = NULL, verbose = 1) {
 #' @param atributos Columnas específicas a transformar. Si es NULL, se transforman todas las columnas continuas.
 #' @param verbose Nivel de verbosidad.
 #' @return Para una variable: el vector transformado. Para un dataset: el mismo data.frame con las columnas continuas transformadas.
+#' @export
 estandarizar <- function(dataset, atributos = NULL, verbose = 1) {
     # Objetivo: estandarizar una variable o un dataset con puntuación z (media 0, desviación 1).
     # Uso: estandarizar(df, atributos = list("Edad"), verbose = 0)

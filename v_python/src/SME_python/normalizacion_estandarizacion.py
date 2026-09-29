@@ -68,7 +68,18 @@ def _transformar_dataset(dataset, atributos, funcion, verbose=1):
             if _es_continua(dataset[col]):
                 resultado[col] = funcion(dataset[col], verbose)
 
-        return resultado
+            else:
+                _verbose(
+                    "La varaiable no es numerica.",
+                    verbose,
+                    nivel=1,
+                    tipo="error"
+                )
+                # raise TypeError(
+                #     f"La columna '{col.name}' no es numérica."
+                # )
+            
+            return resultado
 
     else:
         try:

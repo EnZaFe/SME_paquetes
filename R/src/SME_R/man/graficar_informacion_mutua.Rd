@@ -30,7 +30,7 @@ graficar_informacion_mutua(
 \item{nombre_carpeta}{Nombre de la subcarpeta (por defecto \code{"figures"}).}
 }
 \value{
-Un objeto \code{ggplot} con los dos heatmaps y el valor de MI, guardado como \code{MI.png}.
+Un objeto \code{patchwork}/\code{ggplot} con los dos heatmaps y el valor de MI, guardado como \code{MI.png}.
 }
 \description{
 Heatmap de la tabla de contingencia entre dos variables categóricas, con

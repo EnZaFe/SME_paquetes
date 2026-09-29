@@ -4,14 +4,12 @@
 \alias{.calc_corr_catg}
 \title{Información Mutua (MI) entre dos atributos categóricos.}
 \usage{
-.calc_corr_catg(atributo1, atributo2, normalizar = FALSE, verbose = 1)
+.calc_corr_catg(atributo1, atributo2, verbose = 1)
 }
 \arguments{
 \item{atributo1}{Nombre o columna del primer atributo categórico.}
 
 \item{atributo2}{Nombre o columna del segundo atributo categórico.}
-
-\item{normalizar}{Si es TRUE, se normalizan los resultados a una escala 0-1.}
 
 \item{verbose}{Nivel de información que se muestra durante la ejecución.}
 }

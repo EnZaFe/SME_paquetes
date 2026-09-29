@@ -14,11 +14,10 @@
 #'
 #' @param dataset DataFrame sobre el que realizar el cálculo.
 #' @param atributos Lista de nombres de columnas a analizar, o NULL para usar todas las columnas del dataset.
-#' @param normalizar Si es TRUE, se normalizan los resultados a una escala 0-1 (actualmente no implementado).
 #' @param verbose Nivel de información que se muestra durante la ejecución.
 #' @return Un list con dos elementos: `matriz` (DataFrame numérico de correlaciones/asociaciones entre los atributos) y `detalles` (diccionario con toda la información adicional de cada par de atributos, indexado por la tupla (atributo1, atributo2)).
 #' @export
-calcular_correlacion <- function(dataset, atributos = NULL, normalizar = FALSE, verbose = 1) {
+calcular_correlacion <- function(dataset, atributos = NULL, verbose = 1) {
     .verbose("Iniciando cálculo de correlaciones...", verbose)
 
     # RAISE ERRORS para uso adecuado de las funciones
@@ -33,9 +32,15 @@ calcular_correlacion <- function(dataset, atributos = NULL, normalizar = FALSE, 
     # Si no se especifican atributos, utilizamos todas las columnas.
     if (is.null(atributos)) {
         atributos <- as.list(names(dataset))
+
         .verbose(
             paste0("Warning: no se han indicado atributos se usaran todas las columnas del dataset."),
             verbose
+        )
+        .verbose(
+            paste0("Se usarán los siguientes atributos: ", paste0(atributos, collapse = ", ")),
+            verbose,
+            nivel=3
         )
     }
 
@@ -54,7 +59,11 @@ calcular_correlacion <- function(dataset, atributos = NULL, normalizar = FALSE, 
     for (atributo in atributos) {
 
         columna <- dataset[[atributo]]
-
+        .verbose(
+            paste0("Analizandpo columna '", atributo, "'..."),
+            verbose,
+            nivel=3
+        )
         if (.es_continua(columna)) {
 
             tipos[[atributo]] <- "continua"
@@ -75,7 +84,7 @@ calcular_correlacion <- function(dataset, atributos = NULL, normalizar = FALSE, 
 
     }
 
-    atributos_validos <- unlist(lapply(tipos, names))
+    atributos_validos <- names(tipos)
 
     .verbose(
         paste0("Se analizarán ", length(atributos_validos), " atributos."),
@@ -84,11 +93,14 @@ calcular_correlacion <- function(dataset, atributos = NULL, normalizar = FALSE, 
 
     # Matriz numérica de correlaciones.
     matriz <- data.frame(
-        rownames = atributos_validos,
-        check.names = FALSE,
-        stringsAsFactors = FALSE
+        matrix(
+            NA_real_,
+            nrow = length(atributos_validos),
+            ncol = length(atributos_validos),
+            dimnames = list(atributos_validos, atributos_validos)
+        ),
+        check.names = FALSE
     )
-
     detalles <- list()
 
     # Una variable comparada consigo misma tiene asociación máxima 1.
@@ -102,31 +114,35 @@ calcular_correlacion <- function(dataset, atributos = NULL, normalizar = FALSE, 
     #     MI(A, B)      = MI(B, A)
     #     Welch(A, B)   = Welch(B, A)
     #
-    for (i in seq_len(length(atributos_validos))) {
+    n_atributos <- length(atributos_validos)
+    if (n_atributos >= 2) {
+        for (i in seq_len(n_atributos - 1)) {
 
-        atributo1 <- atributos_validos[i]
+            atributo1 <- atributos_validos[i]
 
-        for (atributo2 in atributos_validos[(i + 1):length(atributos_validos)]) {
+            for (j in seq.int(i + 1, n_atributos)) {
+            atributo2 <- atributos_validos[j]
 
-            resultado <- .calc_atributo(
-                dataset[[atributo1]],
-                dataset[[atributo2]],
-                tipos[[atributo1]],
-                tipos[[atributo2]],
-                normalizar,
-                verbose
-            )
+                resultado <- .calc_atributo(
+                    dataset[[atributo1]],
+                    dataset[[atributo2]],
+                    tipos[[atributo1]],
+                    tipos[[atributo2]],
+                    verbose
+                )
 
-            # En la matriz numérica solo guardamos el escalar.
-            matriz[[atributo1]][[atributo2]] <- resultado[["valor"]]
+                # En la matriz numérica solo guardamos el escalar.
+                matriz[atributo2, atributo1] <- resultado[["valor"]]
+                matriz[atributo1, atributo2] <- resultado[["valor"]]
 
-            # En detalles guardamos TODO lo calculado, indexado en
-            # ambos sentidos para que sea cómodo de consultar.
-            detalles[[paste(atributo1, atributo2, sep = "|")]] <- resultado
-            detalles[[paste(atributo2, atributo1, sep = "|")]] <- resultado
+                # En detalles guardamos TODO lo calculado, indexado en
+                # ambos sentidos para que sea cómodo de consultar.
+                detalles[[paste(atributo1, atributo2, sep = "|")]] <- resultado
+                detalles[[paste(atributo2, atributo1, sep = "|")]] <- resultado
+
+            }
 
         }
-
     }
 
     .verbose(
@@ -151,10 +167,9 @@ calcular_correlacion <- function(dataset, atributos = NULL, normalizar = FALSE, 
 #' @param atributo2 Nombre del segundo atributo.
 #' @param tipo1 Tipo detectado del primer atributo (`"continua"` o `"discreta"`).
 #' @param tipo2 Tipo detectado del segundo atributo (`"continua"` o `"discreta"`).
-#' @param normalizar Si es TRUE, se normalizan los resultados a una escala 0-1.
 #' @param verbose Nivel de información que se muestra durante la ejecución.
 #' @return Un list con, como mínimo, las claves `valor` (el escalar de la matriz) y `tipo` (qué método se usó).
-.calc_atributo <- function(atributo1, atributo2, tipo1, tipo2, normalizar = FALSE, verbose = 1) {
+.calc_atributo <- function(atributo1, atributo2, tipo1, tipo2, verbose = 1) {
     # Decide qué método utilizar en función del tipo de los atributos.
     # Siempre devuelve un diccionario con, como mínimo, la clave
     # "valor" (el escalar de la matriz) y "tipo" (qué método se usó).
@@ -164,7 +179,6 @@ calcular_correlacion <- function(dataset, atributos = NULL, normalizar = FALSE, 
         return(.calc_corr_catg(
             atributo1,
             atributo2,
-            normalizar,
             verbose
         ))
 
@@ -173,7 +187,6 @@ calcular_correlacion <- function(dataset, atributos = NULL, normalizar = FALSE, 
         return(.calc_corr_num(
             atributo1,
             atributo2,
-            normalizar,
             verbose
         ))
 
@@ -185,7 +198,6 @@ calcular_correlacion <- function(dataset, atributos = NULL, normalizar = FALSE, 
         return(.calc_corr_catg_num(
             atributo1,
             atributo2,
-            normalizar,
             verbose
         ))
 
@@ -214,10 +226,9 @@ calcular_correlacion <- function(dataset, atributos = NULL, normalizar = FALSE, 
 #'
 #' @param atributo1 Nombre o columna del primer atributo numérico.
 #' @param atributo2 Nombre o columna del segundo atributo numérico.
-#' @param normalizar Si es TRUE, se normalizan los resultados a una escala 0-1.
 #' @param verbose Nivel de información que se muestra durante la ejecución.
 #' @return Un list con el coeficiente de correlación `r`, el coeficiente de determinación `r2`, el número de observaciones `n`, y los vectores `x` e `y` necesarios para pintar el gráfico de dispersión + recta de regresión.
-.calc_corr_num <- function(atributo1, atributo2, normalizar = FALSE, verbose = 1) {
+.calc_corr_num <- function(atributo1, atributo2, verbose = 1) {
     # Correlación de Pearson.
     # Pearson mide la intensidad y dirección de la relación LINEAL
     # entre dos variables numéricas.
@@ -286,11 +297,6 @@ calcular_correlacion <- function(dataset, atributos = NULL, normalizar = FALSE, 
 
     r <- numerador / denominador
 
-    if (normalizar) {
-        # TODO:
-        # Normalizar el resultado de Pearson a [0, 1].
-    }
-
     return(list(
         tipo = "pearson",
         valor = r,
@@ -318,10 +324,9 @@ calcular_correlacion <- function(dataset, atributos = NULL, normalizar = FALSE, 
 #'
 #' @param atributo1 Nombre o columna del primer atributo categórico.
 #' @param atributo2 Nombre o columna del segundo atributo categórico.
-#' @param normalizar Si es TRUE, se normalizan los resultados a una escala 0-1.
 #' @param verbose Nivel de información que se muestra durante la ejecución.
 #' @return Un list con la información mutua `mi`, el número de observaciones `n`, y la tabla de contingencia ya calculada para poder pintar el heatmap sin recalcularla.
-.calc_corr_catg <- function(atributo1, atributo2, normalizar = FALSE, verbose = 1) {
+.calc_corr_catg <- function(atributo1, atributo2, verbose = 1) {
     # Mutual Information (Información Mutua).
     # La información mutua mide cuánta información aporta conocer
     # una variable sobre la otra.
@@ -338,8 +343,8 @@ calcular_correlacion <- function(dataset, atributos = NULL, normalizar = FALSE, 
     nombre2 <- attr(atributo2, "name") %||% "Atributo 2"
 
     datos <- data.frame(
-        x = as.numeric(unlist(atributo1)),
-        y = as.numeric(unlist(atributo2)),
+        x =(unlist(atributo1)),
+        y = (unlist(atributo2)),
         stringsAsFactors = FALSE
     )
 
@@ -368,7 +373,7 @@ calcular_correlacion <- function(dataset, atributos = NULL, normalizar = FALSE, 
             pareja_count <- tabla[valor_x, valor_y]
 
             if (is.na(pareja_count) || pareja_count == 0) {
-                continue
+                next
             }
 
             p_xy <- pareja_count / n
@@ -379,11 +384,6 @@ calcular_correlacion <- function(dataset, atributos = NULL, normalizar = FALSE, 
 
         }
 
-    }
-
-    if (normalizar) {
-        # TODO:
-        # Normalizar MI a [0, 1].
     }
 
     return(list(
@@ -397,79 +397,105 @@ calcular_correlacion <- function(dataset, atributos = NULL, normalizar = FALSE, 
 }
 
 
-# =============================================================================
-# Correlación categórica + numérica (Welch ANOVA)
-# =============================================================================
-
-# =============================================================================
-# Correlación categórica + numérica (Welch ANOVA)
-# =============================================================================
 
 #' Welch ANOVA de un factor entre un atributo categórico y uno numérico.
 #'
 #' Comprueba si existen diferencias entre las medias de una variable continua
-#' para los distintos grupos de una variable discreta. Welch ANOVA es una
-#' variante del ANOVA de un factor que no requiere que las varianzas de los
-#' grupos sean iguales.
+#' para los distintos grupos de una variable discreta.
 #'
-#' @param atributo1 Nombre o columna del primer atributo (categórico/discreto).
-#' @param atributo2 Nombre o columna del segundo atributo (numérico/continuo).
-#' @param normalizar Si es TRUE, se normalizan los resultados a una escala 0-1.
+#' @param atributo1 Nombre o columna del primer atributo.
+#' @param atributo2 Nombre o columna del segundo atributo.
 #' @param verbose Nivel de información que se muestra durante la ejecución.
-#' @return Un list con el estadístico `f`, el valor-p `p_value`, el número de observaciones `n`, y toda la información por grupo (medias, tamaños, varianzas) para poder pintar el boxplot sin volver a tocar los datos originales.
-.calc_corr_catg_num <- function(atributo1, atributo2, normalizar = FALSE, verbose = 1) {
-    # Welch ANOVA de un factor.
-    # Comprueba si existen diferencias entre las medias de una
-    # variable continua para los distintos grupos de una variable
-    # discreta. Welch ANOVA es una variante del ANOVA de un factor que
-    # no requiere que las varianzas de los grupos sean iguales.
+#'
+#' @return Una lista con el estadístico F y toda la información por grupo.
+.calc_corr_catg_num <- function(
+    atributo1,
+    atributo2,
+    verbose = 1
+) {
+
+    # ---------------------------------------------------------
+    # Construimos los datos SIN convertir previamente a numeric.
     #
-    # Devuelve un diccionario con el estadístico F y toda la info por
-    # grupo (medias, tamaños, varianzas) para poder pintar el boxplot
-    # sin volver a tocar los datos originales.
+    # Es importante conservar los factores/caracteres de la
+    # variable categórica.
+    # ---------------------------------------------------------
 
     datos <- data.frame(
-        x = as.numeric(unlist(atributo1)),
-        y = as.numeric(unlist(atributo2)),
+        x = atributo1,
+        y = atributo2,
         stringsAsFactors = FALSE
     )
 
-    datos <- datos[!is.na(datos$x) & !is.na(datos$y), ]
+    # Eliminar filas con NA
+    datos <- datos[
+        !is.na(datos$x) & !is.na(datos$y),
+        ,
+        drop = FALSE
+    ]
 
-    x <- datos[["x"]]
-    y <- datos[["y"]]
+    x <- datos$x
+    y <- datos$y
 
-    nombre_categorico <- attr(atributo1, "name") %||% "Grupo"
-    nombre_numerico <- attr(atributo2, "name") %||% "Valor"
+    nombre_categorico <- attr(atributo1, "name")
+    if (is.null(nombre_categorico) || is.na(nombre_categorico)) {
+        nombre_categorico <- "Grupo"
+    }
 
-    # Nos aseguramos de que x sea la discreta e y la continua.
+    nombre_numerico <- attr(atributo2, "name")
+    if (is.null(nombre_numerico) || is.na(nombre_numerico)) {
+        nombre_numerico <- "Valor"
+    }
+
+    # ---------------------------------------------------------
+    # Nos aseguramos de que x sea discreta e y continua.
+    # ---------------------------------------------------------
+
     if (!(.es_discreta(x) && .es_continua(y))) {
-        x <- y
-        y <- x
+
+        x_tmp <- x
+        y_tmp <- y
+
+        x <- y_tmp
+        y <- x_tmp
+
+        nombre_tmp <- nombre_categorico
         nombre_categorico <- nombre_numerico
-        nombre_numerico <- nombre_categorico
+        nombre_numerico <- nombre_tmp
     }
 
     grupos <- unique(x)
 
     if (length(grupos) < 2) {
-        stop("Welch ANOVA necesita al menos dos grupos.", call. = FALSE)
+        stop(
+            "Welch ANOVA necesita al menos dos grupos.",
+            call. = FALSE
+        )
     }
+
+    # ---------------------------------------------------------
+    # Información por grupo
+    # ---------------------------------------------------------
 
     valores_grupos <- list()
     n_grupos <- list()
     medias <- list()
     varianzas <- list()
-    grupos_validos <- list()
+
+    grupos_validos <- character(0)
 
     for (grupo in grupos) {
 
         valores <- y[x == grupo]
 
         if (length(valores) < 2) {
+
             .verbose(
-                paste0("El grupo '", grupo, "' no tiene suficientes observaciones "),
-                "y será excluido del cálculo.",
+                paste0(
+                    "El grupo '", grupo,
+                    "' no tiene suficientes observaciones ",
+                    "y será excluido del cálculo."
+                ),
                 verbose,
                 nivel = 1,
                 tipo = "warning"
@@ -478,91 +504,137 @@ calcular_correlacion <- function(dataset, atributos = NULL, normalizar = FALSE, 
             next
         }
 
-        valores_grupos[[as.character(grupo)]] <- valores
-        n_grupos[[as.character(grupo)]] <- length(valores)
-        medias[[as.character(grupo)]] <- mean(valores)
-        varianzas[[as.character(grupo)]] <- var(valores)
+        # Aseguramos que los valores numéricos sean realmente numéricos
+        valores <- as.numeric(valores)
 
-        if (varianzas[[as.character(grupo)]] == 0) {
+        varianza <- var(valores)
+        media <- mean(valores)
+
+        if (is.na(varianza)) {
+            next
+        }
+
+        if (varianza == 0) {
+
             .verbose(
-                paste0("El grupo '", grupo, "' tiene varianza 0 "),
-                "y será excluido del cálculo.",
+                paste0(
+                    "El grupo '", grupo,
+                    "' tiene varianza 0 ",
+                    "y será excluido del cálculo."
+                ),
                 verbose,
                 nivel = 1,
                 tipo = "warning"
             )
 
-            valores_grupos[[as.character(grupo)]] <- NULL
-            n_grupos[[as.character(grupo)]] <- NULL
-            medias[[as.character(grupo)]] <- NULL
-            varianzas[[as.character(grupo)]] <- NULL
             next
         }
 
-        grupos_validos[[as.character(grupo)]] <- as.character(grupo)
+        clave <- as.character(grupo)
 
+        valores_grupos[[clave]] <- valores
+        n_grupos[[clave]] <- length(valores)
+        medias[[clave]] <- media
+        varianzas[[clave]] <- varianza
+
+        grupos_validos <- c(grupos_validos, clave)
     }
 
-    grupos <- unlist(grupos_validos)
+    grupos <- grupos_validos
 
     if (length(grupos) < 2) {
-        stop("No hay suficientes grupos válidos para calcular Welch ANOVA.", call. = FALSE)
+        stop(
+            "No hay suficientes grupos válidos para calcular Welch ANOVA.",
+            call. = FALSE
+        )
     }
+
+    # ---------------------------------------------------------
+    # Pesos
+    # ---------------------------------------------------------
 
     pesos <- list()
 
     for (grupo in grupos) {
-        pesos[[grupo]] <- n_grupos[[grupo]] / varianzas[[grupo]]
+        pesos[[grupo]] <-
+            n_grupos[[grupo]] / varianzas[[grupo]]
     }
 
     suma_pesos <- sum(unlist(pesos))
+
     suma_pesos_media <- sum(
-        unlist(lapply(grupos, function(g) pesos[[g]] * medias[[g]])))
+        sapply(
+            grupos,
+            function(g) {
+                pesos[[g]] * medias[[g]]
+            }
+        )
+    )
 
     media_ponderada <- suma_pesos_media / suma_pesos
 
     k <- length(grupos)
 
+    # ---------------------------------------------------------
+    # Suma entre grupos
+    # ---------------------------------------------------------
+
     suma_entre <- sum(
-        lapply(grupos, function(g) pesos[[g]] * (medias[[g]] - media_ponderada)^2))
+        sapply(
+            grupos,
+            function(g) {
+                pesos[[g]] *
+                    (medias[[g]] - media_ponderada)^2
+            }
+        )
+    )
 
     numerador <- suma_entre / (k - 1)
+
+    # ---------------------------------------------------------
+    # Corrección Welch
+    # ---------------------------------------------------------
 
     correccion <- 0
 
     for (grupo in grupos) {
-        parte <- 1 - pesos[[grupo]] / suma_pesos
-        correccion <- correccion + parte^2 / (n_grupos[[grupo]] - 1)
+
+        parte <-
+            1 - pesos[[grupo]] / suma_pesos
+
+        correccion <-
+            correccion +
+            parte^2 / (n_grupos[[grupo]] - 1)
     }
 
-    correccion <- 1 + (2 * (k - 2) / (k^2 - 1)) * correccion
+    correccion <-
+        1 +
+        (2 * (k - 2) / (k^2 - 1)) *
+        correccion
 
     f_welch <- numerador / correccion
 
     gl_entre <- k - 1
 
-    # TODO:
-    # Calcular los grados de libertad del denominador y el p-value
-    # a partir de la distribución F.
+    # ---------------------------------------------------------
+    # Resultado
+    # ---------------------------------------------------------
 
-    if (normalizar) {
-        # TODO:
-        # Normalizar el resultado a [0, 1].
-    }
-
-    return(list(
-        tipo = "welch",
-        valor = f_welch,
-        gl_entre = gl_entre,
-        grupos = grupos,
-        n_grupos = n_grupos,
-        medias = medias,
-        varianzas = varianzas,
-        media_general = mean(y),
-        valores_grupos = valores_grupos,
-        nombre_categorico = nombre_categorico,
-        nombre_numerico = nombre_numerico
-    ))
+    return(
+        list(
+            tipo = "welch",
+            valor = f_welch,
+            gl_entre = gl_entre,
+            grupos = grupos,
+            n_grupos = n_grupos,
+            medias = medias,
+            varianzas = varianzas,
+            media_general = mean(as.numeric(y)),
+            valores_grupos = valores_grupos,
+            nombre_categorico = nombre_categorico,
+            nombre_numerico = nombre_numerico
+        )
+    )
 }
 
 

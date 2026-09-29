@@ -4,14 +4,7 @@
 \alias{.calc_atributo}
 \title{Decide qué método utilizar para calcular la correlación entre dos atributos.}
 \usage{
-.calc_atributo(
-  atributo1,
-  atributo2,
-  tipo1,
-  tipo2,
-  normalizar = FALSE,
-  verbose = 1
-)
+.calc_atributo(atributo1, atributo2, tipo1, tipo2, verbose = 1)
 }
 \arguments{
 \item{atributo1}{Nombre del primer atributo.}
@@ -21,8 +14,6 @@
 \item{tipo1}{Tipo detectado del primer atributo (\code{"continua"} o \code{"discreta"}).}
 
 \item{tipo2}{Tipo detectado del segundo atributo (\code{"continua"} o \code{"discreta"}).}
-
-\item{normalizar}{Si es TRUE, se normalizan los resultados a una escala 0-1.}
 
 \item{verbose}{Nivel de información que se muestra durante la ejecución.}
 }

@@ -16,9 +16,9 @@ graficar_welch(
 )
 }
 \arguments{
-\item{atributo1}{Variable categórica/discreta que define los grupos.}
+\item{atributo1}{Variable categórica/discreta que define los grupos, o la numérica (se detecta el tipo).}
 
-\item{atributo2}{Variable numérica medida dentro de cada grupo. Debe tener el mismo número de elementos.}
+\item{atributo2}{La otra variable. Debe tener el mismo número de elementos.}
 
 \item{resultado}{Lista opcional con el resultado de Welch ANOVA ya calculado.}
 

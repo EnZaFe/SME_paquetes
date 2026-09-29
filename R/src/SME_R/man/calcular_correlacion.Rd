@@ -4,19 +4,12 @@
 \alias{calcular_correlacion}
 \title{Cálculo de correlación/asociación entre atributos.}
 \usage{
-calcular_correlacion(
-  dataset,
-  atributos = NULL,
-  normalizar = FALSE,
-  verbose = 1
-)
+calcular_correlacion(dataset, atributos = NULL, verbose = 1)
 }
 \arguments{
 \item{dataset}{DataFrame sobre el que realizar el cálculo.}
 
 \item{atributos}{Lista de nombres de columnas a analizar, o NULL para usar todas las columnas del dataset.}
-
-\item{normalizar}{Si es TRUE, se normalizan los resultados a una escala 0-1 (actualmente no implementado).}
 
 \item{verbose}{Nivel de información que se muestra durante la ejecución.}
 }
