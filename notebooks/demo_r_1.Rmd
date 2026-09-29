@@ -357,20 +357,12 @@ print(eliminadas)
 - **Welch** para estudiar la relación entre una variable categórica y una numérica.
 
 La función selecciona el cálculo apropiado en función del tipo de variables.
-```{r}
-
-correlaciones <- calcular_correlacion(df)
-
-correlaciones[0] # Tambien tenemos los detalles de cada calculo para los graficos
-
-```
 
 
 ```{r correlaciones}
-correlaciones <- calcular_correlacion(df, atributos = list("Present_Price", "Selling_Price"), verbose = 1)
-
+correlaciones <- calcular_correlacion(df, atributos = list("selling_price","transmission","seller_type", "km_driven", "owner"), verbose = 1)
+correlaciones$matriz
 # El primer elemento contiene los detalles de cada par de variables.
-correlaciones[["detalles"]][["Present_Price|Selling_Price"]]
 ```
 
 ## 8. Visualización de resultados
@@ -395,8 +387,18 @@ Entre ellas encontramos visualizaciones para:
 
 ```{r graficar_auc}
 fig <- graficar_auc(
-  df$Selling_Price,
-  df$Transmission,
+  df$selling_price,
+  df$transmission,
+  pregunta = "¿Es buena compra?"
+)
+```
+Vemos un AUC positivo y un SI a la pregunta. mientras que la ilustracion ensi, enseña una curva muy por debajo del azar. Eso demuestra una clasificacion invertida y por tanto correcta, inversamente.
+
+Intenetaremos multiplicar el atributo numerico *-1.
+```{r graficar_auc}
+fig <- graficar_auc(
+  df$selling_price*-1,
+  df$transmission,
   pregunta = "¿Es buena compra?"
 )
 ```
@@ -406,21 +408,26 @@ Recordemos, `Selling_Price` es el precio al que quiere venderlo el dueño, `Pres
 ```{r graficar_pearson}
 # Si ya tenemos los resultados podemos pasarlos directamente a la función.
 fig1 <- graficar_pearson(
-  df$Present_Price,
-  df$Selling_Price,
-  resultado = correlaciones[["matriz"]][["Present_Price", "Selling_Price"]]
+  df$km_driven,
+  df$selling_price,
 )
+
+
+resultado = calcular_correlacion(
+    df,
+    atributos=list("km_driven", "selling_price")
+)
+
+fig2 <- graficar_pearson(
+    df$km_driven,
+    df$selling_price,
+    resultado = resultado$detalles[["km_driven|selling_price"]]
+)
+
 ```
 
 Veamos los dos gráficos uno al lado del otro...
 
-\</VSCode.Cell\> \<VSCode.Cell id="#VSC-f8e5f7b6" language="r"\> fig1 \<- graficar_pearson( df$Present_Price,
-  df$Selling_Price )
-
-fig2 \<- graficar_pearson( df$Kms_Driven,
-  df$Selling_Price )
-
-grid.arrange(fig1, fig2, ncol = 2)
 
 ```{r graficos_lado_a_lado, fig.width=10, fig.height=5}
 library(gridExtra)
@@ -428,14 +435,11 @@ library(gridExtra)
 grid.arrange(fig1, fig2, ncol = 2)
 ```
 
-```{r columnas}
-colnames(df)
-```
 
 ```{r graficar_informacion_mutua}
 fig <- graficar_informacion_mutua(
-  df$Fuel_Type,
-  df$Seller_Type
+  df$seller_type,
+  df$owner
 )
 fig
 ```

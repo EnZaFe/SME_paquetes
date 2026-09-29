@@ -48,18 +48,25 @@ def _transformar_dataset(dataset, atributos, funcion, verbose=1):
     solo las columnas continuas (las discretas quedan sin cambios).
     """
 
-   
 
     if _es_dataset(dataset):
+        _verbose(
+            mensaje= 'Dataset detectado',
+            nivel=2,
+            verbose=verbose,
+            tipo='info'
+        )
         resultado = dataset.copy()
+
 
         if atributos is not None:
             columnas = atributos
         else:
             columnas = dataset.columns
 
+        print(columnas)
         for col in columnas:
-
+            print("Msaa", col)
             if col not in dataset.columns:
                 raise ValueError(
                     f"La columna '{col}' no existe en el dataset."
@@ -69,19 +76,27 @@ def _transformar_dataset(dataset, atributos, funcion, verbose=1):
                 resultado[col] = funcion(dataset[col], verbose)
 
             else:
+                print(col)
                 _verbose(
                     "La varaiable no es numerica.",
                     verbose,
                     nivel=1,
                     tipo="error"
                 )
+                resultado[col] = dataset[col]
                 # raise TypeError(
                 #     f"La columna '{col.name}' no es numérica."
                 # )
             
-            return resultado
+        return resultado
 
     else:
+        _verbose(
+            mensaje = 'Dataset NO detectado',
+            nivel=1,
+            verbose=verbose,
+            tipo='warning'
+        )
         try:
             return funcion(dataset, verbose)
         except AttributeError:
