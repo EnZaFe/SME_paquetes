@@ -3,7 +3,6 @@
 # Estructura de datos y cálculo numérico
 numpy
 pandas
-scipy
 scikit-learn
 
 # Visualización

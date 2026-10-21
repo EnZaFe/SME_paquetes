@@ -11,3 +11,9 @@ export(graficar_informacion_mutua)
 export(graficar_pearson)
 export(graficar_welch)
 export(normalizar)
+import(ggplot2)
+importFrom(stats,
+  sd,
+  var
+)
+importFrom(utils,head)

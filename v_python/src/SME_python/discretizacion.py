@@ -251,7 +251,7 @@ def _discretizar_frecuencia(columna_variable, n_intervalos, frecuencia, verbose=
     valores_ordenados= sorted(columna_variable)
 
     _verbose(
-        f"Valores ordenados: {valores_ordenados[:10]}",
+        f"Primeros valores ordenados: {valores_ordenados[:10]}",
         verbose,
         nivel=2
     )

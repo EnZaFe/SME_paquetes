@@ -64,9 +64,7 @@ def _transformar_dataset(dataset, atributos, funcion, verbose=1):
         else:
             columnas = dataset.columns
 
-        print(columnas)
         for col in columnas:
-            print("Msaa", col)
             if col not in dataset.columns:
                 raise ValueError(
                     f"La columna '{col}' no existe en el dataset."
@@ -76,12 +74,11 @@ def _transformar_dataset(dataset, atributos, funcion, verbose=1):
                 resultado[col] = funcion(dataset[col], verbose)
 
             else:
-                print(col)
                 _verbose(
-                    "La varaiable no es numerica.",
+                    f"La variable '{col}' no es numérica; se deja sin cambios.",
                     verbose,
                     nivel=1,
-                    tipo="error"
+                    tipo="warning"
                 )
                 resultado[col] = dataset[col]
                 # raise TypeError(

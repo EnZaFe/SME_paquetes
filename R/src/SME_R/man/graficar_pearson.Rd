@@ -2,7 +2,7 @@
 % Please edit documentation in R/visualizacion.r
 \name{graficar_pearson}
 \alias{graficar_pearson}
-\title{Gráfico de dispersión con regresión lineal y coeficiente de Pearson.}
+\title{Gráfico de dispersión y recta de Pearson.}
 \usage{
 graficar_pearson(
   atributo1,
@@ -14,34 +14,6 @@ graficar_pearson(
   nombre_carpeta = "figures"
 )
 }
-\arguments{
-\item{atributo1}{Primera variable numérica.}
-
-\item{atributo2}{Segunda variable numérica. Debe tener el mismo número de elementos.}
-
-\item{resultado}{Lista opcional con el resultado de Pearson ya calculado.}
-
-\item{pregunta}{Pregunta que responde el gráfico. Si es \code{NULL}, se genera una automáticamente.}
-
-\item{verbose}{Nivel de información mostrado durante la ejecución.}
-
-\item{path}{Carpeta base donde se guarda la imagen.}
-
-\item{nombre_carpeta}{Nombre de la subcarpeta (por defecto \code{"figures"}).}
-}
-\value{
-Un objeto \code{ggplot} con el gráfico de dispersión y la recta ajustada, guardado como \code{pearson.png}.
-}
 \description{
-Dispersión + regresión lineal entre dos variables numéricas, junto con el
-coeficiente de Pearson. Se puede llamar calculando todo internamente o
-reutilizando un resultado ya calculado.
+Gráfico de dispersión y recta de Pearson.
 }
-\section{Uso}{
-
-
-\if{html}{\out{<div class="sourceCode">}}\preformatted{graficar_pearson(x, y) -> fig con dispersión + recta ajustada
-graficar_pearson(x, y, resultado = info) -> reutiliza un resultado de Pearson
-}\if{html}{\out{</div>}}
-}
-

@@ -42,12 +42,15 @@ discretizar <- function(datos, metodo = "anchura", n_intervalos = NULL,
     if (!metodo %in% c("anchura", "frecuencia")) {
         .verbose("Método no válido. Debe ser 'anchura' o 'frecuencia'.", verbose, nivel = 1, tipo = "error")
     }
-    if (!is.null(columnas) && !is.list(columnas)) {
+    if (!is.null(columnas) && !is.character(columnas) && !is.list(columnas)) {
         .verbose("columnas debe ser una lista o None", verbose, nivel = 1, tipo = "error")
+    }
+    if (is.list(columnas)) {
+        columnas <- unlist(columnas)
     }
 
     # Si es una variable NUMÉRICA
-    if (.es_variable(datos)) {
+    if (.es_continua(datos)) {
         return(discretizar_variable(
             datos, metodo, n_intervalos, frecuencia, verbose
         ))
@@ -177,7 +180,7 @@ discretizar_anchura <- function(columna_variable, n_intervalos, verbose = 1) {
 
     intervalos <- numeric(n_intervalos + 1) # Creamos [min, min+anchura*1, min+anchura*2,..., max]
     for (i in seq_len(n_intervalos + 1)) {
-        intervalo <- minimo + i * anchura
+        intervalo <- minimo + (i-1) * anchura
         intervalos[i] <- intervalo
     }
 
@@ -257,7 +260,7 @@ discretizar_frecuencia <- function(columna_variable, n_intervalos, frecuencia, v
 
     valores_ordenados <- sort(columna_variable)
 
-    .verbose(paste0("Valores ordenados: ", paste(head(valores_ordenados, 10), collapse = ", ")), verbose, nivel = 2)
+    .verbose(paste0("Primeros valores ordenados: ", paste(head(valores_ordenados, 10), collapse = ", ")), verbose, nivel = 2)
 
     intervalos <- list()
     grupos <- list()

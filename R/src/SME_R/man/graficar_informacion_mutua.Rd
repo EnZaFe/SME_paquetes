@@ -2,7 +2,7 @@
 % Please edit documentation in R/visualizacion.r
 \name{graficar_informacion_mutua}
 \alias{graficar_informacion_mutua}
-\title{Gráfico de la tabla de contingencia y la información mutua entre dos categóricas.}
+\title{Gráfico de la tabla de información mutua.}
 \usage{
 graficar_informacion_mutua(
   atributo1,
@@ -14,34 +14,6 @@ graficar_informacion_mutua(
   nombre_carpeta = "figures"
 )
 }
-\arguments{
-\item{atributo1}{Primera variable categórica/discreta.}
-
-\item{atributo2}{Segunda variable categórica/discreta. Debe tener el mismo número de elementos.}
-
-\item{resultado}{Lista opcional con la información mutua ya calculada.}
-
-\item{pregunta}{Pregunta que responde el gráfico. Si es \code{NULL}, se genera una automáticamente.}
-
-\item{verbose}{Nivel de información mostrado durante la ejecución.}
-
-\item{path}{Carpeta base donde se guarda la imagen.}
-
-\item{nombre_carpeta}{Nombre de la subcarpeta (por defecto \code{"figures"}).}
-}
-\value{
-Un objeto \code{patchwork}/\code{ggplot} con los dos heatmaps y el valor de MI, guardado como \code{MI.png}.
-}
 \description{
-Heatmap de la tabla de contingencia entre dos variables categóricas, con
-frecuencias absolutas y relativas, y la información mutua entre ambas. Se puede
-llamar calculando todo internamente o reutilizando un resultado ya calculado.
+Gráfico de la tabla de información mutua.
 }
-\section{Uso}{
-
-
-\if{html}{\out{<div class="sourceCode">}}\preformatted{graficar_informacion_mutua(a1, a2) -> fig con los dos heatmaps y el valor de MI
-graficar_informacion_mutua(a1, a2, resultado = info) -> reutiliza un resultado de MI
-}\if{html}{\out{</div>}}
-}
-

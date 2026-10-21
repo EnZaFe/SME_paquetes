@@ -1,6 +1,9 @@
 ---
 title: "SME_R — Ejemplo de uso"
 output:
+  pdf_document:
+    toc: true
+    toc_depth: '3'
   html_document:
     toc: true
     toc_depth: 3
@@ -9,6 +12,15 @@ output:
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE, warning = TRUE, message = TRUE)
+```
+
+```{r, eval=FALSE}
+install.packages("devtools")
+install.packages("ggplot2")
+```
+
+```{r}
+library(ggplot2)
 ```
 
 Este documento muestra cómo utilizar **SME_R**, una librería orientada al preprocesamiento y análisis de datasets.
@@ -36,14 +48,16 @@ También se ha hecho hincapié en un sistema de impresión de información a dis
 
 En primer lugar cargamos la librería.
 
-```{r instalacion, echo=FALSE}
-library(devtools)
+```{r instalacion, warning=FALSE, message=FALSE}
 
 devtools::load_all("C:/Users/Burbu/Desktop/SME_Python/R/src/SME_R") # Durante la creacion y debuugging
 ```
 
-```{r}
-#devtools::document("../R/src/SME_R") #Para documentacion automatica
+```{r, eval=FALSE, warning=FALSE, message=FALSE}
+devtools::document("../R/src/SME_R") #Para documentacion automatica
+```
+
+```{r, eval=FALSE, warning=FALSE, message=FALSE}
 #detach("package:SMER", unload = TRUE)
 devtools::install_github(
   "EnZaFe/SME_paquetes",
@@ -52,7 +66,7 @@ devtools::install_github(
 )
 ```
 
-```{r}
+```{r, warning=FALSE, message=FALSE}
 library(SMER)
 ```
 
@@ -241,7 +255,7 @@ Podemos calcular:
 Estas métricas pueden utilizarse posteriormente para seleccionar o filtrar variables.
 
 ```{r metricas_basico}
-metricas <- calcular_metricas(df, verbose = 2)
+metricas <- calcular_metricas(df, verbose = 1)
 metricas
 ```
 
@@ -299,7 +313,7 @@ df_filtrado <- filtrar_variables(
   df,
   entropia = c(0.3, 0.4),
   modo = "dentro",
-  verbose = 2
+  verbose = 1
 )
 # Variables que han sido eliminadas por el filtro.
 eliminadas <- setdiff(colnames(df), colnames(df_filtrado))
@@ -358,7 +372,6 @@ print(eliminadas)
 
 La función selecciona el cálculo apropiado en función del tipo de variables.
 
-
 ```{r correlaciones}
 correlaciones <- calcular_correlacion(df, atributos = list("selling_price","transmission","seller_type", "km_driven", "owner"), verbose = 1)
 correlaciones$matriz
@@ -369,15 +382,6 @@ correlaciones$matriz
 
 Finalmente, la librería incorpora funciones de visualización para representar los resultados de algunos de los análisis anteriores.
 
-```{r}
-# Solo necesitamos pROC para las funciones de visualización de la librería.
-install.packages("pROC")
-```
-
-```{r}
-library(ggplot2)
-```
-
 Entre ellas encontramos visualizaciones para:
 
 - AUC.
@@ -385,25 +389,25 @@ Entre ellas encontramos visualizaciones para:
 - Información mutua.
 - Estadísticos de Welch.
 
-```{r graficar_auc}
-fig <- graficar_auc(
+```{r}
+fig1 <- graficar_auc(
   df$selling_price,
-  df$transmission,
-  pregunta = "¿Es buena compra?"
+  df$transmission
 )
+fig1
 ```
-Vemos un AUC positivo y un SI a la pregunta. mientras que la ilustracion ensi, enseña una curva muy por debajo del azar. Eso demuestra una clasificacion invertida y por tanto correcta, inversamente.
 
-Intenetaremos multiplicar el atributo numerico *-1.
-```{r graficar_auc}
-fig <- graficar_auc(
+Vemos un AUC positivo y un SI a la pregunta. mientras que la ilustracion en si misma, enseña una curva muy por debajo del azar. Eso demuestra una clasificacion invertida y por tanto correcta, inversamente.
+
+Intentaremos multiplicar el atributo numerico \*-1.
+
+```{r}
+fig2 <- graficar_auc(
   df$selling_price*-1,
-  df$transmission,
-  pregunta = "¿Es buena compra?"
-)
+  df$transmission
+  )
+fig2
 ```
-
-Recordemos, `Selling_Price` es el precio al que quiere venderlo el dueño, `Present_Price` es el precio que tenía en el concesionario.
 
 ```{r graficar_pearson}
 # Si ya tenemos los resultados podemos pasarlos directamente a la función.
@@ -428,13 +432,12 @@ fig2 <- graficar_pearson(
 
 Veamos los dos gráficos uno al lado del otro...
 
-
 ```{r graficos_lado_a_lado, fig.width=10, fig.height=5}
-library(gridExtra)
-
-grid.arrange(fig1, fig2, ncol = 2)
+fig1
+fig2
 ```
 
+Vemos como aunque a priori diriamos que más kilometros significa mas barato, hay suficiente ruido de gamas distintas... que no se puede y mirando misma gama o mismo tipo de coche si existiria la relacion.
 
 ```{r graficar_informacion_mutua}
 fig <- graficar_informacion_mutua(
@@ -444,14 +447,19 @@ fig <- graficar_informacion_mutua(
 fig
 ```
 
+Podemos ver como estadisticamente si hay relacion, y a simple vista vemos como los dueños que son individuos, venden coches de segunda, tercera, incluso mas, mientras que los concesionarios no lo hacen.
+
 ```{r graficar_welch}
 fig <- graficar_welch(
-  df$Fuel_Type,
-  df$Selling_Price,
+  df$fuel,
+  df$selling_price,
+  limite_y=1700000,
   verbose = 3
 )
 fig
 ```
+
+Vemos como de ademas de que caso es mas frecuente el precio de venta medio... varia segun el tipo de fuel del vehiculo.
 
 ## Conclusión
 

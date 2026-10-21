@@ -30,7 +30,7 @@
   # No hay un dataset "wine" en R base; el equivalente habitual es
   # rattle.data::wine (mismos datos que sklearn.datasets.load_wine).
   if (!requireNamespace("rattle.data", quietly = TRUE)) {
-    install.packages("rattle.data")
+    stop("Instala el paquete rattle.data")
   }
   as.data.frame(rattle.data::wine)
 }
@@ -41,7 +41,7 @@
   # que es el dataset de cancer de mama de referencia en R (columnas y
   # codificacion distintas a la version de sklearn).
   if (!requireNamespace("mlbench", quietly = TRUE)) {
-    install.packages("mlbench")
+    stop("Instala el paquete mlbench")
   }
   env <- new.env()
   utils::data("BreastCancer", package = "mlbench", envir = env)
@@ -175,7 +175,7 @@ cargar_dataset <- function(dataset = "iris", sep = NULL, encoding = NULL,
     # 2a) Excel (autodetectado por extension).
     if (ext %in% .EXCEL_EXT) {
       if (!requireNamespace("readxl", quietly = TRUE)) {
-        install.packages("readxl")
+        stop("Instala el paquete readxl")
       }
       .verbose_msg(
         sprintf("Cargando Excel desde '%s' (hoja %s)...", ruta, hoja), verbose
@@ -185,7 +185,7 @@ cargar_dataset <- function(dataset = "iris", sep = NULL, encoding = NULL,
         as.data.frame(readxl::read_excel(ruta, sheet = hoja_arg, ...)),
         error = function(e) {
           stop(sprintf(
-            "%s\nInstala el motor necesario: `install.packages('readxl')`",
+            "%s\nInstala el paquete readxl",
             conditionMessage(e)
           ))
         }
@@ -194,7 +194,7 @@ cargar_dataset <- function(dataset = "iris", sep = NULL, encoding = NULL,
     # 2b) Texto delimitado (CSV/TXT/TSV/TAB).
     } else if (ext %in% .TEXTO_EXT) {
       if (!requireNamespace("readr", quietly = TRUE)) {
-        install.packages("readr")
+        stop("Instala el paquete readr")
       }
       .verbose_msg(sprintf("Cargando texto delimitado desde '%s'...", ruta), verbose)
 

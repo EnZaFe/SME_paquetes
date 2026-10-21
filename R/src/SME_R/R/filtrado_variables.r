@@ -123,8 +123,13 @@ filtrar_variables <- function(dataset, entropia = NULL, varianza = NULL,
         return(TRUE)
     }
 
+
+    # NA significa infinito
     minimo <- intervalo[1]
-    maximo <- intervalo[2]
+    maximo <- if (length(intervalo) >= 2) intervalo[2] else NA
+
+    hay_min <- !is.na(minimo)
+    hay_max <- !is.na(maximo)
 
     # Modo "dentro": el valor debe estar dentro del intervalo.
     if (modo == "dentro") {
@@ -139,19 +144,12 @@ filtrar_variables <- function(dataset, entropia = NULL, varianza = NULL,
     }
 
     # Modo "fuera": el valor debe estar fuera del intervalo.
-    else if (modo == "fuera") {
-        if (!is.null(minimo) && !is.null(maximo)) {
-            return(valor < minimo || valor > maximo)
+    if (modo == "fuera") {
+            if (hay_min && hay_max) return(valor < minimo || valor > maximo)
+            if (hay_min) return(valor < minimo)
+            if (hay_max) return(valor > maximo)
+            return(TRUE)
         }
-        if (!is.null(minimo)) {
-            return(valor < minimo)
-        }
-        if (!is.null(maximo)) {
-            return(valor > maximo)
-        }
-        return(TRUE)
-
-    }
 
     # Modo no válido.
     stop("modo debe ser 'dentro' o 'fuera'.")

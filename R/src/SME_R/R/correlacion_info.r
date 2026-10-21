@@ -632,7 +632,8 @@ calcular_correlacion <- function(dataset, atributos = NULL, verbose = 1) {
             media_general = mean(as.numeric(y)),
             valores_grupos = valores_grupos,
             nombre_categorico = nombre_categorico,
-            nombre_numerico = nombre_numerico
+            nombre_numerico = nombre_numerico,
+            p_valor = 1 - pf(f_welch, gl_entre, Inf)
         )
     )
 }

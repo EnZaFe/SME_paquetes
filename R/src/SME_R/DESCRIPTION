@@ -8,6 +8,8 @@ Authors@R:
         role = c("aut", "cre"),
         email = "ezabaleta010@ikasle.ehu.eus"
     )
+Author: EnZaFe
+Maintainer: EnZaFe <ezabaleta010@ikasle.ehu.eus>
 Description: 
     Statistical and machine learning utilities for data analysis,
     including correlation analysis, discretization, filtering,
@@ -15,4 +17,6 @@ Description:
 License: MIT
 Encoding: UTF-8
 Roxygen: list(markdown = TRUE)
+Imports: ggplot2
+Suggests: readr, readxl, mlbench, rattle.data, knitr, rmarkdown
 Config/roxygen2/version: 8.1.0
