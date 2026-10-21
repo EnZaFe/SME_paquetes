@@ -63,9 +63,17 @@ graficar_auc <- function(atributo_clm, clases, resultado = NULL, pregunta = NULL
              x = paste0("Falsos positivos\n(% de «", neg, "» marcados como «", pos, "»)"),
              y = paste0("Verdaderos positivos\n(% de «", pos, "» detectados)")) +
         .tema()
+    cumple <- auc >= UMBRAL_AUC
+    porque <- if (cumple) {
+        paste0("AUC = ", round(auc, 3), " ≥ ", UMBRAL_AUC,
+               ": el atributo separa las clases con capacidad suficiente.")
+    } else {
+        paste0("AUC = ", round(auc, 3), " < ", UMBRAL_AUC,
+               ": la capacidad de separación queda por debajo del umbral.")
+    }
     .verbose(paste0("Curva ROC · Cómo leerla: cuanto más se acerca la curva a la esquina superior izquierda, ",
                     "mejor separa el atributo las dos clases; la diagonal es lo que haría el azar. ",
-                    "Respondes SÍ si AUC ≥ ", UMBRAL_AUC, "."), verbose)
+                    "Respuesta: ", if (cumple) "SÍ" else "NO", ". ", porque), verbose)
     ggsave(file.path(carpeta_salida, "demo_auc.png"), grafico, width = 6, height = 6, dpi = 110, bg = "white")
     .verbose("Gráfico de la curva ROC creado correctamente.", verbose)
     grafico
@@ -104,8 +112,14 @@ graficar_pearson <- function(atributo1, atributo2, resultado = NULL, pregunta = 
         labs(title = "Correlación de Pearson",
              x = resultado[["nombre1"]], y = resultado[["nombre2"]]) +
         .tema()
+    cumple <- abs(r) >= UMBRAL_R
+    fuerza <- if (abs(r) >= 0.7) "fuerte" else if (abs(r) >= UMBRAL_R) "moderada" else "débil"
+    sentido <- if (r > 0) "positiva" else if (r < 0) "negativa" else "nula"
+    porque <- paste0("relación ", fuerza, " y ", sentido,
+                     "; r² = ", round(r^2, 3), ".")
     .verbose(paste0("Pearson · Cómo leerlo: cada punto es una observación; la recta es el ajuste lineal y la banda, ",
-                    "±1 desviación del error. Respondes SÍ si |r| ≥ ", UMBRAL_R, " y p < 0.05."), verbose)
+                    "±1 desviación del error. Respuesta: ", if (cumple) "SÍ" else "NO",
+                    " porque |r| ", if (cumple) "≥" else "<", " ", UMBRAL_R, ": ", porque), verbose)
     ggsave(file.path(carpeta_salida, "pearson.png"), grafico, width = 7, height = 5, dpi = 110, bg = "white")
     .verbose("Gráfico pearson creado correctamente.", verbose)
     grafico
@@ -145,9 +159,15 @@ graficar_informacion_mutua <- function(atributo1, atributo2, resultado = NULL, p
         .tema() +
         theme(panel.grid = element_blank(),
               axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5))
+    cumple <- mi > 0
+    porque <- if (cumple) {
+        "la información mutua es positiva y conocer una variable aporta información sobre la otra."
+    } else {
+        "la información mutua es cero y no aporta información sobre la otra variable."
+    }
     .verbose(paste0("Información mutua · Cómo leerla: cada celda cuenta las observaciones de esa combinación; ",
                     "si las filas se reparten de forma muy distinta, las variables están relacionadas. ",
-                    "Respondes SÍ si la prueba G da p < 0.05 (MI mayor que la del azar; en bits no hay un umbral universal)."),
+                    "Respuesta: ", if (cumple) "SÍ" else "NO", ". ", porque), 
              verbose)
     esperados <- outer(rowSums(tabla_original), colSums(tabla_original)) / sum(tabla_original)
     if (any(esperados < 5)) {
@@ -199,9 +219,15 @@ graficar_welch <- function(atributo1, atributo2, resultado = NULL, pregunta = NU
              x = resultado[["nombre_categorico"]], y = resultado[["nombre_numerico"]]) +
         .tema()
     if (!is.null(limite_y)) grafico <- grafico + coord_cartesian(ylim = c(NA, limite_y))
+    cumple <- resultado[["valor"]] > 1
+    porque <- if (cumple) {
+        "el estadístico F es mayor que 1 y las medias muestran diferencias descriptivas entre grupos."
+    } else {
+        "el estadístico F no supera 1 y las medias muestran diferencias descriptivas pequeñas."
+    }
     .verbose(paste0("Welch ANOVA · Cómo leerlo: caja = 50% central del grupo, puntos = observaciones, ",
-                    "rombo = media del grupo, línea gris = media general. Respondes SÍ si p < 0.05 ",
-                    "(diferencias tan grandes serían raras si los grupos fueran iguales)."), verbose)
+                    "rombo = media del grupo, línea gris = media general. Respuesta: ",
+                    if (cumple) "SÍ" else "NO", ". ", porque), verbose)
     ggsave(file.path(carpeta_salida, "welch.png"), grafico, width = 10, height = 5, dpi = 110, bg = "white")
     .verbose("Gráfico welch creado correctamente.", verbose)
     grafico
