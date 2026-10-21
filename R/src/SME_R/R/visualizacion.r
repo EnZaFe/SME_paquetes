@@ -73,7 +73,7 @@ graficar_auc <- function(atributo_clm, clases, resultado = NULL, pregunta = NULL
     }
     .verbose(paste0("Curva ROC · Cómo leerla: cuanto más se acerca la curva a la esquina superior izquierda, ",
                     "mejor separa el atributo las dos clases; la diagonal es lo que haría el azar. ",
-                    "Respuesta: ", if (cumple) "SÍ" else "NO", ". ", porque), verbose)
+                    "\nRespuesta: ", if (cumple) "SÍ" else "NO", ". ", porque), verbose)
     ggsave(file.path(carpeta_salida, "demo_auc.png"), grafico, width = 6, height = 6, dpi = 110, bg = "white")
     .verbose("Gráfico de la curva ROC creado correctamente.", verbose)
     grafico
@@ -118,7 +118,7 @@ graficar_pearson <- function(atributo1, atributo2, resultado = NULL, pregunta = 
     porque <- paste0("relación ", fuerza, " y ", sentido,
                      "; r² = ", round(r^2, 3), ".")
     .verbose(paste0("Pearson · Cómo leerlo: cada punto es una observación; la recta es el ajuste lineal y la banda, ",
-                    "±1 desviación del error. Respuesta: ", if (cumple) "SÍ" else "NO",
+                    "±1 desviación del error.\nRespuesta: ", if (cumple) "SÍ" else "NO",
                     " porque |r| ", if (cumple) "≥" else "<", " ", UMBRAL_R, ": ", porque), verbose)
     ggsave(file.path(carpeta_salida, "pearson.png"), grafico, width = 7, height = 5, dpi = 110, bg = "white")
     .verbose("Gráfico pearson creado correctamente.", verbose)
@@ -167,7 +167,7 @@ graficar_informacion_mutua <- function(atributo1, atributo2, resultado = NULL, p
     }
     .verbose(paste0("Información mutua · Cómo leerla: cada celda cuenta las observaciones de esa combinación; ",
                     "si las filas se reparten de forma muy distinta, las variables están relacionadas. ",
-                    "Respuesta: ", if (cumple) "SÍ" else "NO", ". ", porque), 
+                    "\nRespuesta: ", if (cumple) "SÍ" else "NO", ". ", porque), 
              verbose)
     esperados <- outer(rowSums(tabla_original), colSums(tabla_original)) / sum(tabla_original)
     if (any(esperados < 5)) {
@@ -226,7 +226,7 @@ graficar_welch <- function(atributo1, atributo2, resultado = NULL, pregunta = NU
         "el estadístico F no supera 1 y las medias muestran diferencias descriptivas pequeñas."
     }
     .verbose(paste0("Welch ANOVA · Cómo leerlo: caja = 50% central del grupo, puntos = observaciones, ",
-                    "rombo = media del grupo, línea gris = media general. Respuesta: ",
+                    "rombo = media del grupo, línea gris = media general.\nRespuesta: ",
                     if (cumple) "SÍ" else "NO", ". ", porque), verbose)
     ggsave(file.path(carpeta_salida, "welch.png"), grafico, width = 10, height = 5, dpi = 110, bg = "white")
     .verbose("Gráfico welch creado correctamente.", verbose)

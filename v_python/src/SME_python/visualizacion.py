@@ -97,9 +97,17 @@ def graficar_auc(atributo_clm, clases, resultado=None, pregunta=None,
     _estilo(ax, "Curva ROC",
             f"Falsos positivos\n(% de «{clase_neg}» marcados como «{clase_pos}»)",
             f"Verdaderos positivos\n(% de «{clase_pos}» detectados)")
+    cumple = auc >= umbral_auc
+    porque = (
+        f"AUC = {auc:.3f} ≥ {umbral_auc}: el atributo separa las clases "
+        "con capacidad suficiente."
+        if cumple else
+        f"AUC = {auc:.3f} < {umbral_auc}: la capacidad de separación "
+        "queda por debajo del umbral."
+    )
     _verbose("Curva ROC · Cómo leerla: cuanto más se acerca la curva a la esquina superior "
              "izquierda, mejor separa el atributo las dos clases; la diagonal es lo que haría "
-             f"el azar. Respondes SÍ si AUC ≥ {umbral_auc}.", verbose, nivel=1)
+             f"el azar.\nRespuesta: {'SÍ' if cumple else 'NO'}. {porque}", verbose, nivel=1)
     fig.savefig(carpeta_salida / "demo_auc.png", dpi=110, bbox_inches="tight")
     _verbose("Gráfico de la curva ROC creado correctamente.", verbose, nivel=1)
     return fig
@@ -141,9 +149,14 @@ def graficar_pearson(atributo1, atributo2, resultado=None, pregunta=None,
     ax.xaxis.set_major_formatter(FORMATO_NUM)
     ax.yaxis.set_major_formatter(FORMATO_NUM)
     _estilo(ax, "Correlación de Pearson", str(resultado["nombre1"]), str(resultado["nombre2"]))
+    cumple = abs(r) >= umbral_r
+    fuerza = "fuerte" if abs(r) >= 0.7 else "moderada" if cumple else "débil"
+    sentido = "positiva" if r > 0 else "negativa" if r < 0 else "nula"
+    porque = f"relación {fuerza} y {sentido}; r² = {r ** 2:.3f}."
     _verbose("Pearson · Cómo leerlo: cada punto es una observación; la recta es el ajuste "
-             "lineal y la banda, ±1 desviación del error. "
-             f"Respondes SÍ si |r| ≥ {umbral_r} y p < {alfa}.", verbose, nivel=1)
+             "lineal y la banda, ±1 desviación del error.\n"
+             f"Respuesta: {'SÍ' if cumple else 'NO'} porque |r| "
+             f"{'≥' if cumple else '<'} {umbral_r}: {porque}", verbose, nivel=1)
     fig.savefig(carpeta_salida / "pearson.png", dpi=110, bbox_inches="tight")
     _verbose("Gráfico pearson creado correctamente.", verbose, nivel=1)
     return fig
@@ -191,10 +204,16 @@ def graficar_informacion_mutua(atributo1, atributo2, resultado=None, pregunta=No
     _estilo(ax, "Información mutua", str(resultado["nombre2"]), str(resultado["nombre1"]),
             subtitulo=f"MI = {mi:.4f}", rejilla=False)
     ax.spines[:].set_visible(False)
+    cumple = mi > 0
+    porque = (
+        "la información mutua es positiva y conocer una variable aporta "
+        "información sobre la otra."
+        if cumple else
+        "la información mutua es cero y no aporta información sobre la otra variable."
+    )
     _verbose("Información mutua · Cómo leerla: cada celda cuenta las observaciones de esa "
              "combinación; si las filas se reparten de forma muy distinta, las variables están "
-             f"relacionadas. Respondes SÍ si la prueba G da p < {alfa} (MI mayor que la del azar; "
-             "en bits no hay un umbral universal).", verbose, nivel=1)
+             f"relacionadas.\nRespuesta: {'SÍ' if cumple else 'NO'}. {porque}", verbose, nivel=1)
     esperados = np.outer(valores.sum(axis=1), valores.sum(axis=0)) / valores.sum()
     if (esperados < 5).any():
         _verbose("Aviso: hay celdas con menos de 5 casos esperados; la prueba G es orientativa.",
@@ -273,10 +292,17 @@ def graficar_welch(atributo1, atributo2, resultado=None, pregunta=None,
     _estilo(ax, f"Welch ANOVA · F = {f_welch:.3f} ({len(grupos)} grupos)",
             str(resultado["nombre_categorico"]), str(resultado["nombre_numerico"]),
             subtitulo=f"Línea discontinua: media general = {_num(round(media_general))}")
+    cumple = f_welch > 1
+    porque = (
+        "el estadístico F es mayor que 1 y las medias muestran diferencias "
+        "descriptivas entre grupos."
+        if cumple else
+        "el estadístico F no supera 1 y las medias muestran diferencias "
+        "descriptivas pequeñas."
+    )
     _verbose("Welch ANOVA · Cómo leerlo: caja = 50% central del grupo, puntos = observaciones, "
-             "rombo = media del grupo, línea gris = media general. "
-             f"Respondes SÍ si p < {alfa} (diferencias tan grandes serían raras si los grupos "
-             "fueran iguales).", verbose, nivel=1)
+             "rombo = media del grupo, línea gris = media general.\n"
+             f"Respuesta: {'SÍ' if cumple else 'NO'}. {porque}", verbose, nivel=1)
     fig.savefig(carpeta_salida / "welch.png", dpi=110, bbox_inches="tight")
     _verbose("Gráfico welch creado correctamente.", verbose, nivel=1)
     return fig
