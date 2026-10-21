@@ -171,7 +171,10 @@ def graficar_welch(atributo1, atributo2, resultado=None, pregunta=None,
     else:
         grupos = [grupo for grupo in orden_categorias if grupo in grupos]
     fig, ax = plt.subplots()
-    ax.boxplot([valores_grupos[grupo] for grupo in grupos], labels=[str(g) for g in grupos])
+    ax.boxplot(
+        [valores_grupos[grupo] for grupo in grupos],
+        tick_labels=[str(g) for g in grupos]
+    )
     ax.set_title(f"Welch ANOVA (F = {f_welch:.3f})")
     ax.set_xlabel(str(resultado["nombre_categorico"]))
     ax.set_ylabel(str(resultado["nombre_numerico"]))
