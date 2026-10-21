@@ -110,6 +110,7 @@ def graficar_auc(atributo_clm, clases, resultado=None, pregunta=None,
              f"el azar.\nRespuesta: {'SÍ' if cumple else 'NO'}. {porque}", verbose, nivel=1)
     fig.savefig(carpeta_salida / "demo_auc.png", dpi=110, bbox_inches="tight")
     _verbose("Gráfico de la curva ROC creado correctamente.", verbose, nivel=1)
+    plt.close(fig)
     return fig
 
 
@@ -159,6 +160,7 @@ def graficar_pearson(atributo1, atributo2, resultado=None, pregunta=None,
              f"{'≥' if cumple else '<'} {umbral_r}: {porque}", verbose, nivel=1)
     fig.savefig(carpeta_salida / "pearson.png", dpi=110, bbox_inches="tight")
     _verbose("Gráfico pearson creado correctamente.", verbose, nivel=1)
+    plt.close(fig)
     return fig
 
 
@@ -220,6 +222,7 @@ def graficar_informacion_mutua(atributo1, atributo2, resultado=None, pregunta=No
                  verbose, nivel=1)
     fig.savefig(carpeta_salida / "MI.png", dpi=110, bbox_inches="tight")
     _verbose("Gráfico de información mutua creado correctamente.", verbose, nivel=1)
+    plt.close(fig)
     return fig
 
 
@@ -305,4 +308,5 @@ def graficar_welch(atributo1, atributo2, resultado=None, pregunta=None,
              f"Respuesta: {'SÍ' if cumple else 'NO'}. {porque}", verbose, nivel=1)
     fig.savefig(carpeta_salida / "welch.png", dpi=110, bbox_inches="tight")
     _verbose("Gráfico welch creado correctamente.", verbose, nivel=1)
+    plt.close(fig)
     return fig
